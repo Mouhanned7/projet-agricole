@@ -1,13 +1,11 @@
 "use server";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
-import { computeRanking } from "@/lib/domain/ranking";
 import type { RankingResult } from "@/lib/domain/types";
-import { createClient, createServiceClient, supabaseConfigured } from "@/lib/supabase/server";
-import { draftSchema, toRankingInput, toRows, type DraftMedia, type LandDraftInput } from "./draft";
-import { getMedia } from "./queries";
+import { createClient, supabaseConfigured } from "@/lib/supabase/server";
+import { draftSchema, toRows, type DraftMedia, type LandDraftInput } from "./draft";
+import { recomputeRanking } from "./ranking-sync";
 
 export interface SaveResult {
   ok: boolean;
@@ -35,41 +33,6 @@ function withHistory(prev: Record<string, unknown> | null, next: Record<string, 
   delete snapshot.updated_at;
   const entry = { at: new Date().toISOString(), from: prev.answer, to: next.answer, snapshot };
   return { ...next, history: [...((history as unknown[]) ?? []), entry].slice(-20) };
-}
-
-/**
- * CLA-01 : recalcule le classement et l'enregistre. L'appelant doit avoir vérifié
- * que l'utilisateur a accès au terrain (lecture RLS) ; l'écriture passe par la
- * clé serveur car les colonnes de classement sont protégées.
- */
-async function recompute(supabase: SupabaseClient, landId: string, draftInput?: LandDraftInput) {
-  const media = await getMedia(supabase, landId);
-  let draft = draftInput ? draftSchema.parse(draftInput) : null;
-  if (!draft) {
-    const { getDraft } = await import("./queries");
-    draft = (await getDraft(landId))?.draft ?? null;
-  }
-  if (!draft) return null;
-  const ranking = computeRanking(toRankingInput(draft, media));
-  const columns = {
-    ranking_status: ranking.status,
-    ranking_reason: ranking.reason,
-    title_proof: ranking.titleProof,
-    water_proof: ranking.waterProof,
-    has_flow: draft.water.answer === "yes" && draft.water.flowValue != null,
-    score_legal: ranking.scores.legal,
-    score_water: ranking.scores.water,
-    score_completeness: ranking.scores.completeness,
-  };
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    // Les preuves « vérifié / documenté / analysé » posées par l'admin ne sont jamais rétrogradées ici.
-    const { data: current } = await supabase.from("lands").select("title_proof, water_proof").eq("id", landId).single();
-    if (current?.title_proof === "verified" && draft.title.answer === "yes") columns.title_proof = "verified";
-    if (["documented", "analyzed"].includes(current?.water_proof) && draft.water.answer === "yes")
-      columns.water_proof = current!.water_proof;
-    await createServiceClient().from("lands").update(columns).eq("id", landId);
-  }
-  return { ranking, media };
 }
 
 /** TER-05 : enregistrement automatique du brouillon à chaque étape. */
@@ -121,7 +84,7 @@ export async function saveDraft(input: { landId?: string | null; step: number; d
   ]);
   if (results.some((r) => r.error)) return { ok: false, landId, ref, error: "Une partie du dossier n'a pas pu être enregistrée." };
 
-  const computed = await recompute(supabase, landId, parsed.data);
+  const computed = await recomputeRanking(supabase, landId, parsed.data);
   revalidatePath("/espace-porteur");
   return { ok: true, landId, ref, ranking: computed?.ranking, media: computed?.media };
 }
@@ -133,7 +96,7 @@ export async function refreshRanking(landId: string): Promise<SaveResult> {
   const supabase = await createClient();
   const { data } = await supabase.from("lands").select("id").eq("id", landId).maybeSingle();
   if (!data) return { ok: false, error: "Ce terrain est introuvable." };
-  const computed = await recompute(supabase, landId);
+  const computed = await recomputeRanking(supabase, landId);
   return { ok: true, landId, ranking: computed?.ranking, media: computed?.media };
 }
 
@@ -146,7 +109,7 @@ export async function submitLand(landId: string): Promise<SaveResult> {
   if (!land) return { ok: false, error: "Ce terrain est introuvable." };
   if (!EDITABLE.includes(land.status)) return { ok: false, error: "Ce dossier a déjà été soumis." };
 
-  const computed = await recompute(supabase, landId);
+  const computed = await recomputeRanking(supabase, landId);
   if (!computed) return { ok: false, error: "Ce terrain est introuvable." };
   if (!computed.ranking.canSubmit)
     return { ok: false, ranking: computed.ranking, blockingIssues: computed.ranking.blockingIssues, error: "Le dossier est incomplet." };

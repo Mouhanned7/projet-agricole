@@ -14,14 +14,19 @@ import {
 import { LandCard } from "@/components/land-card";
 import { LandVisual } from "@/components/land-visual";
 import { ButtonLink } from "@/components/ui/button";
-import { getCatalog } from "@/lib/catalog";
+import { applyFilters, DEFAULT_FILTERS } from "@/lib/catalog/filters";
+import { getCatalogItems, getCatalogSettings } from "@/lib/catalog/source";
+import Link from "next/link";
 import { formatHa } from "@/lib/utils";
 
-const { visible, hiddenLow, all: lands } = getCatalog();
-const totalHa = lands.reduce((s, l) => s + l.areaHa, 0);
-const withBoth = lands.filter((l) => l.title.answer === "yes" && l.water.answer === "yes").length;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [{ items: lands, demo }, settings] = await Promise.all([getCatalogItems(), getCatalogSettings()]);
+  const { items, hiddenLow } = applyFilters(lands, DEFAULT_FILTERS, settings);
+  const visible = items.slice(0, 6);
+  const totalHa = lands.reduce((s, l) => s + (l.areaHa ?? 0), 0);
+  const withBoth = lands.filter((l) => l.titleAnswer === "yes" && l.waterAnswer === "yes").length;
+
   return (
     <>
       {/* Héro */}
@@ -117,20 +122,28 @@ export default function HomePage() {
               <h2 className="font-serif text-3xl font-semibold text-forest-900 sm:text-4xl">Terrains disponibles</h2>
               <p className="mt-2 text-ink-600">Triés par « Recommandés » : titre foncier et eau d&apos;abord, puis preuves et complétude.</p>
             </div>
-            <div className="flex flex-wrap gap-2" aria-label="Filtres rapides (bientôt actifs)">
-              {["Tous", "Avec titre foncier", "Avec eau", "Vente", "Location", "Partenariat"].map((f, i) => (
-                <span
-                  key={f}
+            <nav className="flex flex-wrap gap-2" aria-label="Filtres rapides">
+              {[
+                ["Tous", "/catalogue"],
+                ["Avec titre foncier", "/catalogue?titre=avec"],
+                ["Avec eau", "/catalogue?eau=avec"],
+                ["Vente", "/catalogue?offre=sale"],
+                ["Location", "/catalogue?offre=rent"],
+                ["Partenariat", "/catalogue?offre=partnership"],
+              ].map(([label, href], i) => (
+                <Link
+                  key={label}
+                  href={href}
                   className={
                     i === 0
                       ? "rounded-full bg-forest-900 px-4 py-2 text-sm font-medium text-cream-50"
-                      : "rounded-full bg-white px-4 py-2 text-sm text-ink-600 ring-1 ring-forest-900/10"
+                      : "rounded-full bg-white px-4 py-2 text-sm text-ink-600 ring-1 ring-forest-900/10 hover:ring-forest-900/30"
                   }
                 >
-                  {f}
-                </span>
+                  {label}
+                </Link>
               ))}
-            </div>
+            </nav>
           </div>
 
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -148,7 +161,7 @@ export default function HomePage() {
               {hiddenLow} terrain{hiddenLow > 1 ? "s" : ""} sans titre ni eau masqué{hiddenLow > 1 ? "s" : ""} par défaut.
             </p>
           )}
-          <p className="mt-2 text-center text-xs text-ink-400">Données de démonstration, fictives.</p>
+          {demo && <p className="mt-2 text-center text-xs text-ink-400">Données de démonstration, fictives.</p>}
         </div>
       </section>
 

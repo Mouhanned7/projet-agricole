@@ -39,10 +39,18 @@ export default async function AccountPage() {
             </span>
           )}
         </p>
-        <div className="mt-4 flex flex-wrap gap-3 text-sm">
-          <Link href="/compte/nouveau-mot-de-passe" className="font-medium text-forest-800 underline underline-offset-2">
-            Changer de mot de passe
-          </Link>
+        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+          {[
+            ["/compte/notifications", "Notifications"],
+            ["/compte/favoris", "Mes favoris"],
+            ["/compte/visites", "Mes demandes de visite"],
+            ...(roles.includes("owner") ? [["/espace-porteur/visites", "Visites reçues"]] : []),
+            ["/compte/nouveau-mot-de-passe", "Changer de mot de passe"],
+          ].map(([href, label]) => (
+            <Link key={href} href={href} className="font-medium text-forest-800 underline underline-offset-2">
+              {label}
+            </Link>
+          ))}
         </div>
       </section>
 

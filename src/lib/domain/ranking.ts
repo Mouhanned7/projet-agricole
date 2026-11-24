@@ -236,17 +236,47 @@ export interface SortableLand {
   publishedAt: string | null;
 }
 
-/** Tri « Recommandés » (§5.2) : chaque critère départage les égalités du précédent. */
-export function compareRecommended(a: SortableLand, b: SortableLand): number {
-  const tier = (l: SortableLand) =>
-    l.waterProof === "analyzed" ? 0 : l.waterProof === "documented" || l.hasFlow ? 1 : l.waterProof === "declared" ? 2 : 3;
-  return (
-    STATUS_ORDER[a.status] - STATUS_ORDER[b.status] ||
-    TITLE_PROOF_ORDER[a.titleProof] - TITLE_PROOF_ORDER[b.titleProof] ||
-    tier(a) - tier(b) ||
-    (b.agriScore ?? -1) - (a.agriScore ?? -1) ||
-    b.completeness - a.completeness ||
-    (b.publishedAt ?? "").localeCompare(a.publishedAt ?? "")
-  );
+export const SORT_CRITERIA = ["status", "title_proof", "water_proof", "agri_score", "completeness", "published_at"] as const;
+export type SortCriterion = (typeof SORT_CRITERIA)[number];
+export const DEFAULT_SORT_ORDER: SortCriterion[] = [...SORT_CRITERIA];
+
+export const SORT_CRITERION_LABEL: Record<SortCriterion, string> = {
+  status: "Statut de classement (titre × eau)",
+  title_proof: "Preuve du titre foncier",
+  water_proof: "Preuve de l'eau",
+  agri_score: "Score agricole",
+  completeness: "Complétude du dossier",
+  published_at: "Date de publication",
+};
+
+const waterTier = (l: SortableLand) =>
+  l.waterProof === "analyzed" ? 0 : l.waterProof === "documented" || l.hasFlow ? 1 : l.waterProof === "declared" ? 2 : 3;
+
+const CRITERION_COMPARE: Record<SortCriterion, (a: SortableLand, b: SortableLand) => number> = {
+  status: (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status],
+  title_proof: (a, b) => TITLE_PROOF_ORDER[a.titleProof] - TITLE_PROOF_ORDER[b.titleProof],
+  water_proof: (a, b) => waterTier(a) - waterTier(b),
+  agri_score: (a, b) => (b.agriScore ?? -1) - (a.agriScore ?? -1),
+  completeness: (a, b) => b.completeness - a.completeness,
+  published_at: (a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""),
+};
+
+/** Ordre de tri réglable par l'administration (CLA-04) ; critères inconnus ignorés, manquants ajoutés à la fin. */
+export function normalizeSortOrder(order: unknown): SortCriterion[] {
+  const list = Array.isArray(order) ? order.filter((c): c is SortCriterion => SORT_CRITERIA.includes(c as SortCriterion)) : [];
+  const unique = [...new Set(list)];
+  return [...unique, ...SORT_CRITERIA.filter((c) => !unique.includes(c))];
 }
 
+export function compareWith(order: readonly SortCriterion[] = DEFAULT_SORT_ORDER) {
+  return (a: SortableLand, b: SortableLand) => {
+    for (const c of order) {
+      const r = CRITERION_COMPARE[c](a, b);
+      if (r !== 0) return r;
+    }
+    return 0;
+  };
+}
+
+/** Tri « Recommandés » (§5.2) : chaque critère départage les égalités du précédent. */
+export const compareRecommended = compareWith(DEFAULT_SORT_ORDER);

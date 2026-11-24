@@ -27,9 +27,14 @@ export default async function OwnerSpacePage() {
           <p className="mt-2 text-ink-600">Présentez votre terrain pour le vendre, le louer ou trouver un partenaire.</p>
         </div>
         {lands.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+          <Link href="/espace-porteur/visites" className={buttonVariants({ variant: "outline" })}>
+            Visites reçues
+          </Link>
           <Link href="/espace-porteur/terrains/nouveau" className={buttonVariants({ variant: "gold" })}>
             <Plus className="size-4" aria-hidden /> Ajouter un terrain
           </Link>
+          </div>
         )}
       </div>
 

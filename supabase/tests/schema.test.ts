@@ -43,6 +43,7 @@ beforeAll(async () => {
   await db.exec(sql("migrations/20261124000001_init.sql"));
   await db.exec(sql("migrations/20261124000003_auth.sql"));
   await db.exec(sql("migrations/20261124000004_reference.sql"));
+  await db.exec(sql("migrations/20261124000005_catalog_admin.sql"));
   await db.exec(sql("seed.sql"));
   await db.exec(`
     grant usage on schema public to anon, authenticated, service_role;
@@ -196,5 +197,42 @@ describe("assistant « Ajouter mon terrain » (Sprint 2)", () => {
     const o = await one(`select * from land_offers where land_id = $1`);
     expect(fromRows(l, t, w, o)).toEqual(draft);
     expect(l.wizard_step).toBe(4);
+  });
+});
+
+describe("catalogue et administration (Sprints 4 et 5)", () => {
+  const SFAX = "00000000-0000-4000-8000-000000000002";
+
+  it("la vue catalogue expose l'eau partagée mais jamais le numéro de titre", async () => {
+    const [row] = await as<Record<string, unknown>>(null, `select * from catalog_lands where id = '00000000-0000-4000-8000-000000000003'`);
+    expect(row.water_shared).toBe("yes");
+    expect(row.water_shared_details).toMatch(/tour d'eau/i);
+    expect(row).not.toHaveProperty("number");
+    expect(row).not.toHaveProperty("owner_names");
+  });
+
+  it("§10 : un changement de statut par l'admin est journalisé avec sa note et notifie le porteur", async () => {
+    await expect(as(OWNER, `select admin_set_status($1, 'suspended', 'x')`, [SFAX])).rejects.toThrow(/administration/);
+    await as(ADMIN, `select admin_set_status($1, 'info_requested', 'Ajoutez la photo du titre')`, [SFAX]);
+    const [h] = await as<{ to_status: string; note: string; actor_id: string }>(OWNER,
+      `select to_status, note, actor_id from land_status_history where land_id = $1 order by id desc limit 1`, [SFAX]);
+    expect(h).toEqual({ to_status: "info_requested", note: "Ajoutez la photo du titre", actor_id: ADMIN });
+    const notes = await as<{ title: string; body: string }>(OWNER, `select title, body from notifications order by id desc limit 1`);
+    expect(notes[0].title).toContain("Informations à compléter");
+    expect(notes[0].body).toBe("Ajoutez la photo du titre");
+    expect(await as(INVESTOR, `select * from notifications where user_id = $1`, [OWNER])).toHaveLength(0);
+  });
+
+  it("RES-09 : un signalement crée une alerte admin", async () => {
+    await as("service", `insert into reports (land_id, category, message) values ($1, 'land_conflict', 'Litige sur la limite nord')`, [CAP_BON]);
+    const alerts = await as<{ kind: string }>(ADMIN, `select kind from admin_alerts where kind = 'report' and land_id = $1`, [CAP_BON]);
+    expect(alerts.length).toBeGreaterThan(0);
+  });
+
+  it("scénario 14 : la demande de visite notifie le porteur, qui voit le demandeur", async () => {
+    const n = await as<{ kind: string }>(OWNER, `select kind from notifications where kind = 'visit_request'`);
+    expect(n.length).toBeGreaterThan(0);
+    const [p] = await as<{ full_name: string }>(OWNER, `select full_name from profiles where id = $1`, [INVESTOR]);
+    expect(p.full_name).toBe("Investisseur");
   });
 });

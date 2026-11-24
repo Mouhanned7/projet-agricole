@@ -84,4 +84,11 @@ const bundle = [
 ].join("\n");
 writeFileSync(new URL("setup/1_schema_complet.sql", root), bundle);
 writeFileSync(new URL("setup/2_demo_facultatif.sql", root), out.join("\n"));
+// Mise à jour d'une base déjà installée avec 1_schema_complet.sql avant les Sprints 4 et 5
+writeFileSync(
+  new URL("setup/4_mise_a_jour_sprints_4_5.sql", root),
+  "-- VerdOlive : à exécuter UNE fois si vous aviez lancé 1_schema_complet.sql avant les Sprints 4 et 5.\n" +
+    readFileSync(new URL("migrations/20261124000005_catalog_admin.sql", root), "utf8"),
+);
+
 console.log(`seed.sql : ${GOVERNORATES.length} gouvernorats, ${DEMO_LANDS.length} terrains`);

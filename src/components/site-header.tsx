@@ -1,12 +1,14 @@
-import { Menu, UserRound, X } from "lucide-react";
+import { Bell, Menu, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ButtonLink } from "@/components/ui/button";
 import { getSession } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 import { homeForRoles } from "@/lib/validation/auth";
 
 const NAV = [
   { href: "/catalogue", label: "Terrains" },
+  { href: "/carte", label: "Carte" },
   { href: "/#porteurs", label: "Porteurs de terrain" },
   { href: "/#impact", label: "Notre impact" },
   { href: "/#fonctionnement", label: "Comment ça marche" },
@@ -16,6 +18,12 @@ export async function SiteHeader() {
   const session = await getSession();
   const firstName = session?.profile?.full_name.split(" ")[0];
   const space = session ? homeForRoles(session.profile?.roles ?? []) : null;
+  let unread = 0;
+  if (session) {
+    const supabase = await createClient();
+    const { count } = await supabase.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", session.userId).is("read_at", null);
+    unread = count ?? 0;
+  }
   const spaceLabel = space === "/espace-porteur" ? "Mon espace porteur" : space === "/admin" ? "Administration" : "Catalogue";
 
   return (
@@ -25,20 +33,24 @@ export async function SiteHeader() {
           <Logo light />
         </Link>
 
-        <nav aria-label="Navigation principale" className="hidden items-center gap-7 lg:flex">
+        <nav aria-label="Navigation principale" className="hidden items-center gap-5 xl:gap-7 lg:flex">
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="text-sm text-cream-100/85 transition-colors hover:text-gold-400">
+            <Link key={n.href} href={n.href} className="whitespace-nowrap text-sm text-cream-100/85 transition-colors hover:text-gold-400">
               {n.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 sm:flex">
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
           {session ? (
             <>
               <ButtonLink href={space!} variant="ghost" size="sm" className="text-cream-100 hover:bg-cream-50/10">
                 {spaceLabel}
               </ButtonLink>
+              <Link href="/compte/notifications" className="relative grid size-9 place-items-center rounded-full text-cream-100 hover:bg-cream-50/10" aria-label={`Notifications${unread ? ` (${unread} non lues)` : ""}`}>
+                <Bell className="size-5" aria-hidden />
+                {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-gold-500 px-1 text-[11px] font-bold text-forest-950">{unread > 9 ? "9+" : unread}</span>}
+              </Link>
               <ButtonLink href="/compte" variant="gold" size="sm">
                 <UserRound className="size-4" aria-hidden /> {firstName ?? "Mon compte"}
               </ButtonLink>
