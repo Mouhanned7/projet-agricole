@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "seed:generate": "tsx scripts/generate-seed.ts"
+    "seed:generate": "tsx scripts/generate-seed.ts",
+    "check:build": "NEXT_DIST_DIR=.next-check next build --turbopack",
+    "check:supabase": "node scripts/check-supabase.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.9",

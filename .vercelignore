@@ -1,0 +1,8 @@
+# Jamais envoyé à Vercel : les variables sont configurées dans le projet Vercel.
+.env
+.env.*
+!.env.example
+.next
+.next-check
+node_modules
+.claude
