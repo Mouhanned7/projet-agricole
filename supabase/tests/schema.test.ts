@@ -5,6 +5,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
+import { draftSchema, fromRows, toRows } from "../../src/lib/lands/draft";
 
 const root = new URL("../", import.meta.url);
 const sql = (p: string) => readFileSync(new URL(p, root), "utf8");
@@ -155,5 +156,45 @@ describe("inscription (Sprint 1)", () => {
     await expect(as(NEW, `update lands set status = 'submitted' where id = $1`, [land.id])).rejects.toThrow(/Confirmez votre adresse/);
     await as("service", `update profiles set email_verified_at = now() where id = $1`, [NEW]);
     await as(NEW, `update lands set status = 'submitted' where id = $1`, [land.id]);
+  });
+});
+
+describe("assistant « Ajouter mon terrain » (Sprint 2)", () => {
+  it("TER-05 : un brouillon complet s'enregistre et se relit à l'identique", async () => {
+    const draft = draftSchema.parse({
+      objective: "rent",
+      name: "Verger d'amandiers",
+      title: { answer: "no", altDocument: "adoulaire", registrationInProgress: "yes", ownership: "joint", jointOwnersAgree: true },
+      water: { answer: "yes", sources: ["well", "borehole"], availability: "seasonal", flowValue: 2.5, flowUnit: "m3_h", flowMeasured: false, shared: "no" },
+      location: { governorateId: "sidi-bouzid", delegationId: "sidi-bouzid-regueb", lat: 34.86, lng: 9.79, areaHa: 30, exploitableAreaHa: 25 },
+      land: { state: "exploited", trees: [{ species: "Amandier", count: 1200, age: "12 ans" }], crops: "Amandes" },
+      offer: { rentTnd: 18000, rentPeriod: "annuel", minDurationYears: 5, allowPlanting: true, renewable: true, notes: "Visite possible" },
+    });
+    const rows = toRows(draft);
+
+    // Insère une ligne avec les noms de colonnes produits par toRows : une faute de nom échoue ici.
+    const insert = async (table: string, row: Record<string, unknown>, extra: Record<string, unknown>) => {
+      const all = { ...extra, ...row };
+      const cols = Object.keys(all);
+      const vals = cols.map((c) => {
+        const v = all[c];
+        return v !== null && typeof v === "object" && !Array.isArray(v) ? JSON.stringify(v) : Array.isArray(v) && c === "trees" ? JSON.stringify(v) : v;
+      });
+      const placeholders = cols.map((_, i) => "$" + (i + 1)).join(", ");
+      return as<{ id?: string }>(OTHER_OWNER, `insert into ${table} (${cols.join(", ")}) values (${placeholders}) returning *`, vals);
+    };
+
+    const [land] = await insert("lands", rows.land, { owner_id: OTHER_OWNER, wizard_step: 4 });
+    await insert("land_titles", rows.title, { land_id: land.id });
+    await insert("land_water", rows.water, { land_id: land.id });
+    await insert("land_offers", rows.offer, { land_id: land.id });
+
+    const one = async (q: string) => (await as<Record<string, unknown>>(OTHER_OWNER, q, [land.id]))[0];
+    const l = await one(`select * from lands where id = $1`);
+    const t = await one(`select * from land_titles where land_id = $1`);
+    const w = await one(`select * from land_water where land_id = $1`);
+    const o = await one(`select * from land_offers where land_id = $1`);
+    expect(fromRows(l, t, w, o)).toEqual(draft);
+    expect(l.wizard_step).toBe(4);
   });
 });

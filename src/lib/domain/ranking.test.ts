@@ -90,6 +90,13 @@ describe("règles de saisie (§3.2, scénarios 3 à 6, 20, 21)", () => {
     expect(computeRanking(land({ title: { answer: "yes", number: "A-1", ownership: "joint", jointOwnersAgree: true } })).canSubmit).toBe(true);
   });
 
+  it("localisation et superficie exigées à l'envoi, sans changer le statut", () => {
+    const r = computeRanking(land({ essentials: { objective: "sale", photoCount: 1, governorate: null, delegation: null, areaHa: null } }));
+    expect(r.canSubmit).toBe(false);
+    expect(r.blockingIssues).toEqual(["Indiquez le gouvernorat et la délégation.", "Indiquez la superficie."]);
+    expect(r.status).toBe("needs_check");
+  });
+
   it("scénario 21 : eau partagée exige des précisions", () => {
     expect(computeRanking(land({ water: { answer: "yes", sources: ["well"], availability: "year_round", shared: "yes" } })).canSubmit).toBe(false);
   });

@@ -34,3 +34,10 @@ Date des décisions : 24/11/2026.
 - Texte de la charte de l'investissement responsable (RES-01), à valider par un juriste.
 - Montant des frais et commissions VerdOlive.
 - Textes légaux : conditions d'utilisation et politique de confidentialité.
+
+## Décisions prises pendant le développement
+
+| # | Question | Décision | Raison |
+|---|---|---|---|
+| D17 | Champs exigés pour envoyer un dossier | Titre et eau (règle 4), objectif, **gouvernorat et superficie**. Les autres champs restent facultatifs et améliorent le classement. | Sans localisation ni superficie, l'administration ne peut pas traiter le dossier. |
+| D18 | Carte à l'étape 3 | Bouton « Utiliser ma position » et coordonnées en Sprint 2 ; la carte interactive arrive avec le Sprint 4 (MapTiler). | Éviter deux intégrations de carte. |

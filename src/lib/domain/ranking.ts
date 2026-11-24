@@ -76,6 +76,9 @@ function blockingIssues(land: LandForRanking): { titleWater: string[]; other: st
   const { title: t, water: w, essentials: e } = land;
 
   if (!e.objective) other.push("Choisissez votre objectif : vendre, louer ou trouver un partenaire.");
+  // Décision : sans localisation ni superficie, l'administration ne peut pas traiter le dossier.
+  if (!e.governorate) other.push("Indiquez le gouvernorat et la délégation.");
+  if (!e.areaHa || e.areaHa <= 0) other.push("Indiquez la superficie.");
 
   if (!t.answer) titleWater.push("Indiquez si le terrain a un titre foncier.");
   else if (t.answer === "yes") {
@@ -140,10 +143,10 @@ function completeness(land: LandForRanking): { score: number; actions: string[] 
   const e = land.essentials;
   const x = land.extras ?? {};
   const items: [boolean, number, string][] = [
-    [Boolean(e.objective), 10, "Choisissez votre objectif."],
-    [land.title.answer != null, 15, "Répondez à la question du titre foncier."],
-    [land.title.answer !== "yes" || validateTitleNumber(land.title.number).ok, 10, "Ajoutez le numéro de titre foncier."],
-    [land.water.answer != null, 15, "Précisez la disponibilité de l'eau."],
+    [Boolean(e.objective), 10, "Choisissez votre objectif : vendre, louer ou trouver un partenaire."],
+    [land.title.answer != null, 15, "Indiquez si le terrain a un titre foncier."],
+    [land.title.answer !== "yes" || Boolean(land.title.number?.trim()), 10, "Le numéro du titre foncier est obligatoire."],
+    [land.water.answer != null, 15, "Indiquez si l'eau est disponible sur le terrain."],
     [Boolean(e.governorate && e.delegation), 8, "Indiquez le gouvernorat et la délégation."],
     [e.lat != null && e.lng != null, 5, "Placez le terrain sur la carte."],
     [Boolean(e.areaHa && e.areaHa > 0), 8, "Indiquez la superficie."],
@@ -217,7 +220,7 @@ export function computeRanking(land: LandForRanking): RankingResult {
     titleProof,
     waterProof,
     scores,
-    actions: [...issues.titleWater, ...comp.actions.filter((a) => !issues.titleWater.includes(a))],
+    actions: [...new Set([...blocking, ...comp.actions])],
     canSubmit: blocking.length === 0,
     blockingIssues: blocking,
   };
