@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Design system VerdOlive : couleurs tirées de la maquette */
+:root {
+  --forest-950: #142313;
+  --forest-900: #1c3020;
+  --forest-800: #24402a;
+  --forest-700: #2f5233;
+  --olive-600: #5b7a3a;
+  --olive-500: #7a9a4e;
+  --olive-100: #e7eed9;
+  --gold-600: #b08a3a;
+  --gold-500: #c9a24b;
+  --gold-400: #d9b867;
+  --gold-100: #f5ead0;
+  --cream-50: #fbf8f1;
+  --cream-100: #f6f1e5;
+  --cream-200: #ece4d2;
+  --ink-900: #1e241a;
+  --ink-600: #4e5747;
+  --ink-400: #858c7d;
+  --danger-600: #b3412f;
+  --warning-600: #b07a1a;
+}
+
+@theme inline {
+  --color-forest-950: var(--forest-950);
+  --color-forest-900: var(--forest-900);
+  --color-forest-800: var(--forest-800);
+  --color-forest-700: var(--forest-700);
+  --color-olive-600: var(--olive-600);
+  --color-olive-500: var(--olive-500);
+  --color-olive-100: var(--olive-100);
+  --color-gold-600: var(--gold-600);
+  --color-gold-500: var(--gold-500);
+  --color-gold-400: var(--gold-400);
+  --color-gold-100: var(--gold-100);
+  --color-cream-50: var(--cream-50);
+  --color-cream-100: var(--cream-100);
+  --color-cream-200: var(--cream-200);
+  --color-ink-900: var(--ink-900);
+  --color-ink-600: var(--ink-600);
+  --color-ink-400: var(--ink-400);
+  --color-danger-600: var(--danger-600);
+  --color-warning-600: var(--warning-600);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-cormorant);
+  --radius-card: 1rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--cream-50);
+  color: var(--ink-900);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Paysage d'oliveraie générique en attendant les vraies photos */
+.landscape {
+  background:
+    radial-gradient(ellipse 60% 40% at 75% 25%, rgba(244, 196, 110, 0.55), transparent 70%),
+    linear-gradient(180deg, #c99a52 0%, #8f7a45 28%, #5c6b37 52%, #33502a 75%, #1f3520 100%);
+}
