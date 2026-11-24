@@ -1,16 +1,23 @@
-import { Menu, X } from "lucide-react";
+import { Menu, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ButtonLink } from "@/components/ui/button";
+import { getSession } from "@/lib/auth/session";
+import { homeForRoles } from "@/lib/validation/auth";
 
 const NAV = [
-  { href: "/#catalogue", label: "Terrains" },
+  { href: "/catalogue", label: "Terrains" },
   { href: "/#porteurs", label: "Porteurs de terrain" },
   { href: "/#impact", label: "Notre impact" },
   { href: "/#fonctionnement", label: "Comment ça marche" },
 ];
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const session = await getSession();
+  const firstName = session?.profile?.full_name.split(" ")[0];
+  const space = session ? homeForRoles(session.profile?.roles ?? []) : null;
+  const spaceLabel = space === "/espace-porteur" ? "Mon espace porteur" : space === "/admin" ? "Administration" : "Catalogue";
+
   return (
     <header className="sticky top-0 z-40 bg-forest-950/95 backdrop-blur supports-[backdrop-filter]:bg-forest-950/85">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6">
@@ -27,12 +34,25 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2 sm:flex">
-          <ButtonLink href="/connexion" variant="ghost" size="sm" className="text-cream-100 hover:bg-cream-50/10">
-            Se connecter
-          </ButtonLink>
-          <ButtonLink href="/inscription" variant="gold" size="sm">
-            Créer un compte
-          </ButtonLink>
+          {session ? (
+            <>
+              <ButtonLink href={space!} variant="ghost" size="sm" className="text-cream-100 hover:bg-cream-50/10">
+                {spaceLabel}
+              </ButtonLink>
+              <ButtonLink href="/compte" variant="gold" size="sm">
+                <UserRound className="size-4" aria-hidden /> {firstName ?? "Mon compte"}
+              </ButtonLink>
+            </>
+          ) : (
+            <>
+              <ButtonLink href="/connexion" variant="ghost" size="sm" className="text-cream-100 hover:bg-cream-50/10">
+                Se connecter
+              </ButtonLink>
+              <ButtonLink href="/inscription" variant="gold" size="sm">
+                Créer un compte
+              </ButtonLink>
+            </>
+          )}
         </div>
 
         {/* Menu mobile sans JavaScript */}
@@ -51,8 +71,17 @@ export function SiteHeader() {
               ))}
             </nav>
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <ButtonLink href="/connexion" variant="outlineLight">Se connecter</ButtonLink>
-              <ButtonLink href="/inscription" variant="gold">Créer un compte</ButtonLink>
+              {session ? (
+                <>
+                  <ButtonLink href={space!} variant="outlineLight">{spaceLabel}</ButtonLink>
+                  <ButtonLink href="/compte" variant="gold">Mon compte</ButtonLink>
+                </>
+              ) : (
+                <>
+                  <ButtonLink href="/connexion" variant="outlineLight">Se connecter</ButtonLink>
+                  <ButtonLink href="/inscription" variant="gold">Créer un compte</ButtonLink>
+                </>
+              )}
             </div>
           </div>
         </details>

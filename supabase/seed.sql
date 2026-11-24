@@ -181,7 +181,8 @@ on conflict (id) do nothing;
 
 -- Comptes de démonstration (environnement local uniquement)
 insert into auth.users (id, email) values ('00000000-0000-4000-9000-000000000001', 'porteur.demo@verdolive.test'), ('00000000-0000-4000-9000-000000000002', 'admin.demo@verdolive.test') on conflict do nothing;
-insert into profiles (id, full_name, roles) values ('00000000-0000-4000-9000-000000000001', 'Porteur Démo', '{owner}'), ('00000000-0000-4000-9000-000000000002', 'Admin Démo', '{admin}') on conflict do nothing;
+insert into profiles (id, full_name, roles, email_verified_at) values ('00000000-0000-4000-9000-000000000001', 'Porteur Démo', '{owner}', now()), ('00000000-0000-4000-9000-000000000002', 'Admin Démo', '{admin}', now())
+  on conflict (id) do update set full_name = excluded.full_name, roles = excluded.roles, email_verified_at = excluded.email_verified_at;
 
 -- Oliveraie – Cap Bon : priority (Titre vérifié, eau analysée, 3 documents)
 insert into lands (id, ref, owner_id, status, wizard_step, objective, title, governorate_id, delegation_id, lat, lng, area_ha, crops, ranking_status, ranking_reason, title_proof, water_proof, has_flow, score_legal, score_water, score_completeness, submitted_at, published_at) values ('00000000-0000-4000-8000-000000000001', 'VO-DEMO1', '00000000-0000-4000-9000-000000000001', 'published', 7, 'sale', 'Oliveraie – Cap Bon', 'nabeul', 'nabeul-korba', 36.58, 10.86, 50, 'Oliviers Chetoui, 40 ans', 'priority', 'Titre vérifié, eau analysée, 3 documents', 'verified', 'analyzed', true, 90, 85, 100, '2026-11-02', '2026-11-02');

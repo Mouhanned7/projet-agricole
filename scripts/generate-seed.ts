@@ -28,7 +28,8 @@ out.push(
 
 out.push("-- Comptes de démonstration (environnement local uniquement)");
 out.push(`insert into auth.users (id, email) values (${q(DEMO_OWNER)}, 'porteur.demo@verdolive.test'), (${q(DEMO_ADMIN)}, 'admin.demo@verdolive.test') on conflict do nothing;`);
-out.push(`insert into profiles (id, full_name, roles) values (${q(DEMO_OWNER)}, 'Porteur Démo', '{owner}'), (${q(DEMO_ADMIN)}, 'Admin Démo', '{admin}') on conflict do nothing;\n`);
+out.push(`insert into profiles (id, full_name, roles, email_verified_at) values (${q(DEMO_OWNER)}, 'Porteur Démo', '{owner}', now()), (${q(DEMO_ADMIN)}, 'Admin Démo', '{admin}', now())\n` +
+  `  on conflict (id) do update set full_name = excluded.full_name, roles = excluded.roles, email_verified_at = excluded.email_verified_at;\n`);
 
 for (const l of DEMO_LANDS) {
   const r = l.ranking;

@@ -33,3 +33,5 @@ Tant que Supabase n'est pas branché, la page d'accueil affiche des terrains de 
 1. Créer un projet sur supabase.com, puis renseigner `.env.local`.
 2. `npx supabase link --project-ref <ref>` puis `npx supabase db push`.
 3. En local uniquement : charger `supabase/seed.sql`.
+
+Réglages d'authentification (e-mails, Google) : [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md).

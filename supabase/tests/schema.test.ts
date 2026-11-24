@@ -31,23 +31,26 @@ async function as<T = Record<string, unknown>>(user: string | null, query: strin
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(`
-    create role anon; create role authenticated; create role service_role;
+    create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth;
-    create table auth.users (id uuid primary key, email text);
+    create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}', raw_app_meta_data jsonb default '{}');
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
     grant usage on schema auth to anon, authenticated, service_role;
     grant execute on function auth.uid() to anon, authenticated, service_role;
   `);
   await db.exec(sql("migrations/20261124000001_init.sql"));
+  await db.exec(sql("migrations/20261124000003_auth.sql"));
   await db.exec(sql("seed.sql"));
   await db.exec(`
     grant usage on schema public to anon, authenticated, service_role;
     grant select, insert, update, delete on all tables in schema public to authenticated, service_role;
     grant select, insert on reports to anon;
     grant usage on all sequences in schema public to anon, authenticated, service_role;
-    insert into auth.users (id) values ('${INVESTOR}'), ('${OTHER_OWNER}');
-    insert into profiles (id, full_name, roles) values ('${INVESTOR}', 'Investisseur', '{investor}'), ('${OTHER_OWNER}', 'Autre porteur', '{owner}');
+    insert into auth.users (id, email, raw_user_meta_data) values
+      ('${INVESTOR}', 'invest@test.tn', '{"full_name": "Investisseur", "role": "investor"}'),
+      ('${OTHER_OWNER}', 'autre@test.tn', '{"full_name": "Autre porteur", "role": "owner"}');
+    update profiles set email_verified_at = now() where id = '${OTHER_OWNER}';
     insert into land_documents (land_id, kind, storage_path, uploaded_by) values ('${CAP_BON}', 'title', '${CAP_BON}/titre.pdf', '${OWNER}');
   `);
 }, 60_000);
@@ -109,14 +112,47 @@ describe("règles de sécurité (§13.1)", () => {
     const insert = `insert into visit_requests (land_id, investor_id) values ($1, $2)`;
     await expect(as(INVESTOR, insert, [CAP_BON, INVESTOR])).rejects.toThrow(/row-level security/);
     await as(INVESTOR, `update profiles set charter_accepted_at = now() where id = $1`, [INVESTOR]);
+    // D7 : la charte ne suffit pas, l'e-mail doit être confirmé
+    await expect(as(INVESTOR, insert, [CAP_BON, INVESTOR])).rejects.toThrow(/row-level security/);
+    await as("service", `update profiles set email_verified_at = now() where id = $1`, [INVESTOR]);
     await as(INVESTOR, insert, [CAP_BON, INVESTOR]);
     expect(await as(OWNER, `select * from visit_requests where land_id = $1`, [CAP_BON])).toHaveLength(1);
   });
 
-  it("un utilisateur ne peut pas se donner le rôle admin", async () => {
-    await db.exec(`insert into auth.users (id) values ('00000000-0000-4000-9000-000000000099')`);
-    await expect(
-      as("00000000-0000-4000-9000-000000000099", `insert into profiles (id, full_name, roles) values ($1, 'x', '{admin}')`, ["00000000-0000-4000-9000-000000000099"]),
-    ).rejects.toThrow(/row-level security/);
+  it("le serveur seul peut marquer l'e-mail comme vérifié", async () => {
+    await expect(as(INVESTOR, `update profiles set email_verified_at = now() where id = $1`, [INVESTOR])).rejects.toThrow(/plateforme/);
+  });
+});
+
+describe("inscription (Sprint 1)", () => {
+  const NEW = "00000000-0000-4000-9000-000000000099";
+
+  it("INS-01 / INS-09 : le profil est créé avec le rôle choisi, l'admin est refusé", async () => {
+    await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 'x@test.tn', $2)`, [
+      NEW, JSON.stringify({ full_name: "  Amine Ben Ali ", role: "admin" }),
+    ]);
+    const [p] = await as<{ full_name: string; roles: string; email_verified_at: string | null }>(NEW,
+      `select full_name, roles::text, email_verified_at from profiles where id = $1`, [NEW]);
+    expect(p).toEqual({ full_name: "Amine Ben Ali", roles: "{}", email_verified_at: null });
+
+    await as(NEW, `update profiles set roles = '{owner,investor}' where id = $1`, [NEW]);
+    await expect(as(NEW, `update profiles set roles = '{owner,admin}' where id = $1`, [NEW])).rejects.toThrow(/administration/);
+  });
+
+  it("Google : adresse déjà vérifiée", async () => {
+    const G = "00000000-0000-4000-9000-000000000098";
+    await db.query(`insert into auth.users (id, email, raw_user_meta_data, raw_app_meta_data) values ($1, 'g@gmail.com', $2, $3)`, [
+      G, JSON.stringify({ name: "Salma", role: "investor" }), JSON.stringify({ provider: "google" }),
+    ]);
+    const [p] = await as<{ full_name: string; roles: string; verified: boolean }>(G,
+      `select full_name, roles::text, email_verified_at is not null as verified from profiles where id = $1`, [G]);
+    expect(p).toEqual({ full_name: "Salma", roles: "{investor}", verified: true });
+  });
+
+  it("D7 : un porteur non vérifié ne peut pas soumettre son terrain", async () => {
+    const [land] = await as<{ id: string }>(NEW, `insert into lands (owner_id, objective) values ($1, 'rent') returning id`, [NEW]);
+    await expect(as(NEW, `update lands set status = 'submitted' where id = $1`, [land.id])).rejects.toThrow(/Confirmez votre adresse/);
+    await as("service", `update profiles set email_verified_at = now() where id = $1`, [NEW]);
+    await as(NEW, `update lands set status = 'submitted' where id = $1`, [land.id]);
   });
 });

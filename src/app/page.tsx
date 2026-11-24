@@ -14,19 +14,10 @@ import {
 import { LandCard } from "@/components/land-card";
 import { LandVisual } from "@/components/land-visual";
 import { ButtonLink } from "@/components/ui/button";
-import { DEMO_LANDS } from "@/lib/data/demo-lands";
-import { compareRecommended } from "@/lib/domain/ranking";
+import { getCatalog } from "@/lib/catalog";
 import { formatHa } from "@/lib/utils";
 
-// Tant que Supabase n'est pas branché, la page lit les terrains de démonstration.
-const lands = [...DEMO_LANDS].sort((a, b) =>
-  compareRecommended(
-    { ...a.ranking, agriScore: null, hasFlow: Boolean(a.water.flow), completeness: a.ranking.scores.completeness, publishedAt: a.publishedAt },
-    { ...b.ranking, agriScore: null, hasFlow: Boolean(b.water.flow), completeness: b.ranking.scores.completeness, publishedAt: b.publishedAt },
-  ),
-);
-const visible = lands.filter((l) => l.ranking.status !== "low"); // décision D4
-const hiddenLow = lands.length - visible.length;
+const { visible, hiddenLow, all: lands } = getCatalog();
 const totalHa = lands.reduce((s, l) => s + l.areaHa, 0);
 const withBoth = lands.filter((l) => l.title.answer === "yes" && l.water.answer === "yes").length;
 
@@ -146,6 +137,11 @@ export default function HomePage() {
             {visible.map((land, i) => (
               <LandCard key={land.id} land={land} index={i} />
             ))}
+          </div>
+          <div className="mt-8 text-center">
+            <ButtonLink href="/catalogue" variant="outline">
+              Voir tout le catalogue <ArrowRight className="size-4" aria-hidden />
+            </ButtonLink>
           </div>
           {hiddenLow > 0 && (
             <p className="mt-6 text-center text-sm text-ink-600">
