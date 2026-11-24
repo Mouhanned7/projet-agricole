@@ -41,6 +41,7 @@ beforeAll(async () => {
   `);
   await db.exec(sql("migrations/20261124000001_init.sql"));
   await db.exec(sql("migrations/20261124000003_auth.sql"));
+  await db.exec(sql("migrations/20261124000004_reference.sql"));
   await db.exec(sql("seed.sql"));
   await db.exec(`
     grant usage on schema public to anon, authenticated, service_role;

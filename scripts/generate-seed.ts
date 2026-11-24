@@ -1,8 +1,11 @@
 /**
- * Génère supabase/seed.sql à partir du référentiel et des terrains de démo.
+ * Génère, à partir de src/lib/data :
+ * - supabase/migrations/20261124000004_reference.sql : gouvernorats et délégations (production)
+ * - supabase/seed.sql : comptes et terrains de démonstration (fictifs)
+ * - supabase/setup/ : fichiers à coller dans le SQL Editor de Supabase
  * Usage : npm run seed:generate
  */
-import { writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { GOVERNORATES, delegationId } from "../src/lib/data/tunisia";
 import { DEMO_LANDS } from "../src/lib/data/demo-lands";
 
@@ -15,13 +18,15 @@ const q = (v: unknown): string => {
 
 const DEMO_OWNER = "00000000-0000-4000-9000-000000000001";
 const DEMO_ADMIN = "00000000-0000-4000-9000-000000000002";
-const out: string[] = ["-- Généré par scripts/generate-seed.ts — ne pas modifier à la main.", ""];
+const HEADER = "-- Généré par scripts/generate-seed.ts — ne pas modifier à la main.";
+const ref: string[] = [HEADER, "-- Référentiel géographique de la Tunisie (nécessaire en production).", ""];
+const out: string[] = [HEADER, "-- Données de démonstration FICTIVES. Ne pas charger en production.", ""];
 
-out.push("insert into governorates (id, name_fr, name_ar) values");
-out.push(GOVERNORATES.map((g) => `  (${q(g.id)}, ${q(g.fr)}, ${q(g.ar)})`).join(",\n") + "\non conflict (id) do nothing;\n");
+ref.push("insert into governorates (id, name_fr, name_ar) values");
+ref.push(GOVERNORATES.map((g) => `  (${q(g.id)}, ${q(g.fr)}, ${q(g.ar)})`).join(",\n") + "\non conflict (id) do nothing;\n");
 
-out.push("insert into delegations (id, governorate_id, name_fr) values");
-out.push(
+ref.push("insert into delegations (id, governorate_id, name_fr) values");
+ref.push(
   GOVERNORATES.flatMap((g) => g.delegations.map((d) => `  (${q(delegationId(g.id, d))}, ${q(g.id)}, ${q(d)})`)).join(",\n") +
     "\non conflict (id) do nothing;\n",
 );
@@ -64,5 +69,19 @@ for (const l of DEMO_LANDS) {
   );
 }
 
-writeFileSync(new URL("../supabase/seed.sql", import.meta.url), out.join("\n"));
+const root = new URL("../supabase/", import.meta.url);
+writeFileSync(new URL("migrations/20261124000004_reference.sql", root), ref.join("\n"));
+writeFileSync(new URL("seed.sql", root), out.join("\n"));
+
+// Fichiers prêts à coller dans Supabase > SQL Editor
+const migrations = readdirSync(new URL("migrations/", root)).filter((f) => f.endsWith(".sql")).sort();
+const bundle = [
+  "-- VerdOlive : schéma complet, à exécuter UNE fois dans Supabase > SQL Editor.",
+  `-- ${HEADER.slice(3)}`,
+  `-- Contient, dans l'ordre : ${migrations.join(", ")}`,
+  "",
+  ...migrations.map((f) => `-- ===== ${f} =====\n${readFileSync(new URL(`migrations/${f}`, root), "utf8")}`),
+].join("\n");
+writeFileSync(new URL("setup/1_schema_complet.sql", root), bundle);
+writeFileSync(new URL("setup/2_demo_facultatif.sql", root), out.join("\n"));
 console.log(`seed.sql : ${GOVERNORATES.length} gouvernorats, ${DEMO_LANDS.length} terrains`);
