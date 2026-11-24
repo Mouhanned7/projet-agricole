@@ -2,7 +2,7 @@
 
 import { ArrowDown, ArrowUp, Loader2 } from "lucide-react";
 import { useState, useTransition } from "react";
-import { reviewDocument, saveSettings, setFeeNote, setLandStatus, setWaterProof, verifyTitle, type AdminResult } from "@/lib/admin/actions";
+import { generateDiagnostic, reviewDocument, saveSettings, setFeeNote, setLandStatus, setWaterProof, validateDiagnostic, verifyTitle, type AdminResult } from "@/lib/admin/actions";
 import { SORT_CRITERION_LABEL, type SortCriterion } from "@/lib/domain/ranking";
 import { WORKFLOW_LABEL } from "@/lib/lands/labels";
 import { cn } from "@/lib/utils";
@@ -210,6 +210,34 @@ export function SettingsForm({ showLow, order }: { showLow: boolean; order: Sort
         </button>
         <Msg />
       </div>
+    </div>
+  );
+}
+
+/** D12 : générer puis valider le diagnostic GeoAI. */
+export function DiagnosticAdmin({ landId, status }: { landId: string; status: "auto" | "validated" | null }) {
+  const [notes, setNotes] = useState("");
+  const { pending, run, Msg } = useAction();
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={pending} onClick={() => run(() => generateDiagnostic(landId), "Diagnostic généré.")} className={cn(btn, "bg-white ring-1 ring-forest-900/15")}>
+          {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}
+          {status ? "Régénérer le diagnostic" : "Générer le diagnostic"}
+        </button>
+        {status === "auto" && (
+          <button type="button" disabled={pending} onClick={() => run(() => validateDiagnostic(landId, true, notes), "Diagnostic validé et publié.")} className={cn(btn, "bg-forest-900 text-cream-50")}>
+            Valider le diagnostic
+          </button>
+        )}
+        {status === "validated" && (
+          <button type="button" disabled={pending} onClick={() => run(() => validateDiagnostic(landId, false), "Validation retirée.")} className={cn(btn, "bg-danger-600/10 text-danger-600")}>
+            Retirer la validation
+          </button>
+        )}
+      </div>
+      {status === "auto" && <input value={notes} onChange={(e) => setNotes(e.target.value)} className={field} placeholder="Note de l'expert (facultative, visible sur la fiche)" />}
+      <Msg />
     </div>
   );
 }

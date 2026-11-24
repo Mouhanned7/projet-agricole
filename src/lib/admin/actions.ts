@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth/session";
 import { normalizeSortOrder } from "@/lib/domain/ranking";
 import { sendEmail } from "@/lib/email";
 import { WORKFLOW_LABEL } from "@/lib/lands/labels";
+import { runDiagnostic } from "@/lib/geoai/service";
 import { recomputeRanking } from "@/lib/lands/ranking-sync";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
@@ -197,6 +198,41 @@ export async function setFeeNote(landId: string, note: string): Promise<AdminRes
   if (!ctx || !uuid.safeParse(landId).success) return { ok: false, error: "Réservé à l'administration." };
   const { error } = await ctx.supabase.from("land_offers").update({ verdolive_fee_note: note.trim().slice(0, 500) || null }).eq("land_id", landId);
   if (error) return { ok: false, error: "Enregistrement impossible." };
+  refresh(landId);
+  return { ok: true };
+}
+
+/** §11 : génère le diagnostic GeoAI (statut « automatique »). */
+export async function generateDiagnostic(landId: string): Promise<AdminResult> {
+  const ctx = await requireAdmin();
+  if (!ctx || !uuid.safeParse(landId).success) return { ok: false, error: "Réservé à l'administration." };
+  const r = await runDiagnostic(landId);
+  if (!r.ok) return r;
+  // Un diagnostic régénéré n'est plus validé : le score agricole public est retiré.
+  await ctx.supabase.from("lands").update({ score_agri: null }).eq("id", landId);
+  await audit("generate_diagnostic", "land", landId);
+  refresh(landId);
+  return { ok: true };
+}
+
+/** §11.3 / D12 : validation par l'administration ; le score agricole devient public. */
+export async function validateDiagnostic(landId: string, validated: boolean, notes?: string): Promise<AdminResult> {
+  const ctx = await requireAdmin();
+  if (!ctx || !uuid.safeParse(landId).success) return { ok: false, error: "Réservé à l'administration." };
+  const { data, error } = await ctx.supabase
+    .from("land_diagnostics")
+    .update({
+      status: validated ? "validated" : "auto",
+      validated_by: validated ? ctx.session.userId : null,
+      validated_at: validated ? new Date().toISOString() : null,
+      validation_notes: notes?.trim() || null,
+    })
+    .eq("land_id", landId)
+    .select("agri_score")
+    .single();
+  if (error || !data) return { ok: false, error: "Générez d'abord le diagnostic." };
+  await ctx.supabase.from("lands").update({ score_agri: validated ? data.agri_score : null }).eq("id", landId);
+  await audit(validated ? "validate_diagnostic" : "unvalidate_diagnostic", "land", landId, { notes });
   refresh(landId);
   return { ok: true };
 }

@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
   // Permet `npm run check:build` sans écraser le cache d'un `npm run dev` en cours.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
+  images: {
+    // Unsplash redimensionne lui-même ; les photos Supabase sont servies telles quelles.
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

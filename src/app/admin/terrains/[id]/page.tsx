@@ -2,8 +2,10 @@ import { ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DocumentReview, FeeNoteForm, StatusPanel, TitleVerification, WaterVerification } from "@/components/admin/dossier-actions";
+import { DiagnosticAdmin, DocumentReview, FeeNoteForm, StatusPanel, TitleVerification, WaterVerification } from "@/components/admin/dossier-actions";
+import { DiagnosticView } from "@/components/land/diagnostic-view";
 import { StatusBadge, TitlePill, WaterPill } from "@/components/ui/proof-pills";
+import { getDiagnostic } from "@/lib/geoai/service";
 import { GOVERNORATES, delegationId } from "@/lib/data/tunisia";
 import { computeRanking } from "@/lib/domain/ranking";
 import type { RankingStatus, TitleProof, WaterProof } from "@/lib/domain/types";
@@ -68,6 +70,7 @@ export default async function AdminLandPage({ params }: { params: Promise<{ id: 
     paths.length ? ((await supabase.storage.from(bucket).createSignedUrls(paths, 900)).data ?? []).map((d) => d.signedUrl ?? undefined) : [];
   const [docUrls, photoUrls] = await Promise.all([sign("land-documents", (docs ?? []).map((d) => d.storage_path)), sign("land-photos", (photos ?? []).map((p) => p.storage_path))]);
 
+  const diag = await getDiagnostic(supabase, id);
   const d = loaded.draft;
   const live = computeRanking(toRankingInput(d, loaded.media));
   const gov = GOVERNORATES.find((g) => g.id === d.location.governorateId);
@@ -162,6 +165,18 @@ export default async function AdminLandPage({ params }: { params: Promise<{ id: 
                     <img src={u} alt="" className="aspect-square rounded-lg object-cover" />
                   </a>
                 ))}
+              </div>
+            )}
+          </Card>
+
+          <Card title="Diagnostic GeoAI (§11)">
+            <p className="mb-3 text-sm text-ink-600">
+              Généré à partir des coordonnées (climat Open-Meteo, sol SoilGrids) et des déclarations. Il n&apos;est visible des investisseurs qu&apos;après votre validation.
+            </p>
+            <DiagnosticAdmin landId={id} status={diag?.status ?? null} />
+            {diag && (
+              <div className="mt-5 border-t border-forest-900/10 pt-5">
+                <DiagnosticView diag={diag} />
               </div>
             )}
           </Card>

@@ -3,7 +3,7 @@
 update profiles
    set roles = array_append(roles, 'admin'),
        email_verified_at = coalesce(email_verified_at, now())
- where id = (select id from auth.users where email = 'votre.adresse@exemple.com')
+ where id = (select id from auth.users where email = 'mouhanedmliki6@gmail.com.com')
    and not ('admin' = any (roles));
 
 -- Vérification : doit afficher votre nom avec {…,admin}

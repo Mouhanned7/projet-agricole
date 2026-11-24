@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { runDiagnostic } from "@/lib/geoai/service";
 import { getSession } from "@/lib/auth/session";
 import type { RankingResult } from "@/lib/domain/types";
 import { createClient, supabaseConfigured } from "@/lib/supabase/server";
@@ -125,6 +127,8 @@ export async function submitLand(landId: string): Promise<SaveResult> {
     .update({ status: "submitted", submitted_at: new Date().toISOString(), wizard_step: 7 })
     .eq("id", landId);
   if (error) return { ok: false, error: "Soumission impossible. Réessayez." };
+  // D12 : diagnostic GeoAI généré automatiquement après la réponse, puis relu par l'admin.
+  after(() => runDiagnostic(landId).catch((e) => console.error("runDiagnostic", e)));
   revalidatePath("/espace-porteur");
   return { ok: true, landId, ranking: computed.ranking };
 }

@@ -84,6 +84,12 @@ const bundle = [
 ].join("\n");
 writeFileSync(new URL("setup/1_schema_complet.sql", root), bundle);
 writeFileSync(new URL("setup/2_demo_facultatif.sql", root), out.join("\n"));
+writeFileSync(
+  new URL("setup/6_mise_a_jour_phase2_geoai.sql", root),
+  "-- VerdOlive : à exécuter UNE fois si votre base a été installée avant la phase 2 (diagnostic GeoAI).\n" +
+    readFileSync(new URL("migrations/20261124000006_diagnostics.sql", root), "utf8"),
+);
+
 // Mise à jour d'une base déjà installée avec 1_schema_complet.sql avant les Sprints 4 et 5
 writeFileSync(
   new URL("setup/4_mise_a_jour_sprints_4_5.sql", root),

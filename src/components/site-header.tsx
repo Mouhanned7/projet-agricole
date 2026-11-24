@@ -27,15 +27,15 @@ export async function SiteHeader() {
   const spaceLabel = space === "/espace-porteur" ? "Mon espace porteur" : space === "/admin" ? "Administration" : "Catalogue";
 
   return (
-    <header className="sticky top-0 z-40 bg-forest-950/95 backdrop-blur supports-[backdrop-filter]:bg-forest-950/85">
+    <header className="sticky top-0 z-40 border-b border-forest-900/10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6">
         <Link href="/" aria-label="VerdOlive, accueil">
-          <Logo light />
+          <Logo />
         </Link>
 
         <nav aria-label="Navigation principale" className="hidden items-center gap-5 xl:gap-7 lg:flex">
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className="whitespace-nowrap text-sm text-cream-100/85 transition-colors hover:text-gold-400">
+            <Link key={n.href} href={n.href} className="whitespace-nowrap text-sm font-medium text-ink-600 transition-colors hover:text-forest-800">
               {n.label}
             </Link>
           ))}
@@ -44,23 +44,23 @@ export async function SiteHeader() {
         <div className="hidden shrink-0 items-center gap-2 sm:flex">
           {session ? (
             <>
-              <ButtonLink href={space!} variant="ghost" size="sm" className="text-cream-100 hover:bg-cream-50/10">
+              <ButtonLink href={space!} variant="ghost" size="sm">
                 {spaceLabel}
               </ButtonLink>
-              <Link href="/compte/notifications" className="relative grid size-9 place-items-center rounded-full text-cream-100 hover:bg-cream-50/10" aria-label={`Notifications${unread ? ` (${unread} non lues)` : ""}`}>
+              <Link href="/compte/notifications" className="relative grid size-9 place-items-center rounded-full text-forest-900 hover:bg-forest-900/5" aria-label={`Notifications${unread ? ` (${unread} non lues)` : ""}`}>
                 <Bell className="size-5" aria-hidden />
                 {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid min-w-5 place-items-center rounded-full bg-gold-500 px-1 text-[11px] font-bold text-forest-950">{unread > 9 ? "9+" : unread}</span>}
               </Link>
-              <ButtonLink href="/compte" variant="gold" size="sm">
+              <ButtonLink href="/compte" variant="forest" size="sm">
                 <UserRound className="size-4" aria-hidden /> {firstName ?? "Mon compte"}
               </ButtonLink>
             </>
           ) : (
             <>
-              <ButtonLink href="/connexion" variant="ghost" size="sm" className="text-cream-100 hover:bg-cream-50/10">
+              <ButtonLink href="/connexion" variant="ghost" size="sm">
                 Se connecter
               </ButtonLink>
-              <ButtonLink href="/inscription" variant="gold" size="sm">
+              <ButtonLink href="/inscription" variant="forest" size="sm">
                 Créer un compte
               </ButtonLink>
             </>
@@ -69,15 +69,15 @@ export async function SiteHeader() {
 
         {/* Menu mobile sans JavaScript */}
         <details className="group relative sm:hidden">
-          <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full text-cream-50 hover:bg-cream-50/10 [&::-webkit-details-marker]:hidden">
+          <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full text-forest-900 hover:bg-forest-900/5 [&::-webkit-details-marker]:hidden">
             <Menu className="size-5 group-open:hidden" aria-hidden />
             <X className="hidden size-5 group-open:block" aria-hidden />
             <span className="sr-only">Menu</span>
           </summary>
-          <div className="fixed inset-x-0 top-16 border-t border-cream-50/10 bg-forest-950 px-4 pb-6 pt-2">
+          <div className="fixed inset-x-0 top-16 border-b border-t border-forest-900/10 bg-white px-4 pb-6 pt-2 shadow-lg">
             <nav aria-label="Navigation mobile" className="flex flex-col">
               {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="border-b border-cream-50/10 py-3.5 text-cream-100">
+                <Link key={n.href} href={n.href} className="border-b border-forest-900/10 py-3.5 font-medium text-ink-900">
                   {n.label}
                 </Link>
               ))}
@@ -85,13 +85,13 @@ export async function SiteHeader() {
             <div className="mt-5 grid grid-cols-2 gap-3">
               {session ? (
                 <>
-                  <ButtonLink href={space!} variant="outlineLight">{spaceLabel}</ButtonLink>
-                  <ButtonLink href="/compte" variant="gold">Mon compte</ButtonLink>
+                  <ButtonLink href={space!} variant="outline">{spaceLabel}</ButtonLink>
+                  <ButtonLink href="/compte" variant="forest">Mon compte</ButtonLink>
                 </>
               ) : (
                 <>
-                  <ButtonLink href="/connexion" variant="outlineLight">Se connecter</ButtonLink>
-                  <ButtonLink href="/inscription" variant="gold">Créer un compte</ButtonLink>
+                  <ButtonLink href="/connexion" variant="outline">Se connecter</ButtonLink>
+                  <ButtonLink href="/inscription" variant="forest">Créer un compte</ButtonLink>
                 </>
               )}
             </div>

@@ -42,6 +42,6 @@ Légende : ✅ automatisé · 👤 à vérifier à la main avec Supabase configu
 
 - [ ] Exécuter `supabase/setup/5_retirer_demo.sql`.
 - [ ] Textes juridiques et charte validés par un juriste (`/conditions`, `/confidentialite`, `/charte`).
-- [ ] SMTP configuré dans Supabase et `RESEND_API_KEY` dans Vercel (e-mails de notification).
+- [ ] SMTP configuré dans Supabase et variables `SMTP_*` dans Vercel (voir docs/SMTP.md).
 - [ ] Nom de domaine relié à Vercel, `NEXT_PUBLIC_SITE_URL` et URLs Supabase mis à jour.
 - [ ] Sauvegardes quotidiennes (offre Supabase Pro).

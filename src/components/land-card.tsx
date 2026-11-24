@@ -1,6 +1,6 @@
 import { ArrowRight, MapPin, Maximize2 } from "lucide-react";
 import Link from "next/link";
-import { LandVisual } from "@/components/land-visual";
+import { LandPhoto } from "@/components/land-photo";
 import { StatusBadge, TitlePill, WaterPill } from "@/components/ui/proof-pills";
 import type { CatalogItem } from "@/lib/catalog/types";
 import { OBJECTIVE_LABEL } from "@/lib/lands/labels";
@@ -23,14 +23,17 @@ export function LandCard({ land, index = 0 }: { land: CatalogItem; index?: numbe
   const price = priceLine(land);
   const cover = land.photoUrls[0];
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-card bg-white shadow-[0_1px_2px_rgba(20,35,19,0.06),0_8px_24px_-12px_rgba(20,35,19,0.18)] ring-1 ring-forest-900/5 transition-shadow hover:shadow-[0_2px_4px_rgba(20,35,19,0.08),0_16px_32px_-12px_rgba(20,35,19,0.28)]">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(20,35,19,0.05),0_10px_30px_-18px_rgba(20,35,19,0.25)] ring-1 ring-forest-900/8 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(20,35,19,0.06),0_20px_40px_-18px_rgba(20,35,19,0.35)]">
       <div className="relative aspect-[16/10] overflow-hidden bg-cream-200">
-        {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={cover} alt="" className="size-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-        ) : (
-          <LandVisual hue={land.hue} seed={index + 1} className="transition-transform duration-500 group-hover:scale-105" />
-        )}
+        <LandPhoto
+          src={cover}
+          landId={land.id}
+          crops={`${land.crops ?? ""} ${land.trees.map((t) => t.species).join(" ")} ${land.name}`}
+          alt={`Photo du terrain ${land.name}`}
+          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          priority={index < 3}
+          className="transition-transform duration-700 group-hover:scale-[1.04]"
+        />
         <div className="absolute inset-x-3 top-3">
           <StatusBadge status={land.rankingStatus} />
         </div>
@@ -75,7 +78,7 @@ export function LandCard({ land, index = 0 }: { land: CatalogItem; index?: numbe
             <p className="text-[11px] uppercase tracking-wide text-ink-400">{price.label}</p>
             <p className="font-semibold text-forest-900">{price.value}</p>
           </div>
-          <span className="grid size-9 place-items-center rounded-full bg-gold-500 text-forest-950 transition-colors group-hover:bg-gold-400">
+          <span className="grid size-9 place-items-center rounded-full bg-forest-900 text-cream-50 transition-colors group-hover:bg-gold-500 group-hover:text-forest-950">
             <ArrowRight className="size-4" aria-hidden />
           </span>
         </div>

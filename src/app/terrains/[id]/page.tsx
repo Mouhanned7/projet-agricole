@@ -2,9 +2,11 @@ import { ArrowLeft, Droplets, FileText, Info, Lock, MapPin, Maximize2, Sprout, T
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LandVisual } from "@/components/land-visual";
+import { LandPhoto } from "@/components/land-photo";
 import { priceLine } from "@/components/land-card";
+import { DiagnosticView } from "@/components/land/diagnostic-view";
 import { FavoriteButton, ReportButton, VisitRequest } from "@/components/land/land-actions";
+import { getDiagnostic } from "@/lib/geoai/service";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, TitlePill, WaterPill } from "@/components/ui/proof-pills";
 import { getSession } from "@/lib/auth/session";
@@ -83,6 +85,8 @@ export default async function LandPage({ params }: { params: Promise<{ id: strin
   if (!land) notFound();
 
   let favorite = false;
+  let diag: Awaited<ReturnType<typeof getDiagnostic>> = null;
+  if (supabaseConfigured) diag = await getDiagnostic(await createClient(), id);
   if (session && supabaseConfigured) {
     const supabase = await createClient();
     const { data } = await supabase.from("favorites").select("land_id").eq("land_id", id).eq("user_id", session.userId).maybeSingle();
@@ -102,12 +106,14 @@ export default async function LandPage({ params }: { params: Promise<{ id: strin
       <div className="mt-4 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="grid gap-2">
           <div className="relative aspect-[16/10] overflow-hidden rounded-card bg-cream-200">
-            {land.photoUrls[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={land.photoUrls[0]} alt={`Photo du terrain ${land.name}`} className="size-full object-cover" />
-            ) : (
-              <LandVisual hue={land.hue} seed={3} />
-            )}
+            <LandPhoto
+              src={land.photoUrls[0]}
+              landId={land.id}
+              crops={`${land.crops ?? ""} ${land.trees.map((t) => t.species).join(" ")} ${land.name}`}
+              alt={`Photo du terrain ${land.name}`}
+              sizes="(min-width: 1024px) 60vw, 100vw"
+              priority
+            />
             <StatusBadge status={land.rankingStatus} className="absolute left-3 top-3" />
           </div>
           {land.photoUrls.length > 1 && (
@@ -330,11 +336,15 @@ export default async function LandPage({ params }: { params: Promise<{ id: strin
               </div>
             </Section>
 
-            <Section id="diagnostic" title="Diagnostic agricole et étude économique">
-              <p className="text-sm text-ink-600">
-                Le diagnostic GeoAI (sol, climat, cultures adaptées) et l&apos;estimation économique arrivent en phase 2. Ce seront des outils
-                d&apos;aide à la décision, sans garantie de rendement.
-              </p>
+            <Section id="diagnostic" title="Diagnostic agricole et étude économique" icon={<Sprout className="size-5 text-olive-600" aria-hidden />}>
+              {diag ? (
+                <DiagnosticView diag={diag} />
+              ) : (
+                <p className="text-sm text-ink-600">Le diagnostic GeoAI (sol, climat, cultures adaptées, eau, économie) est en cours de préparation par l&apos;équipe VerdOlive.</p>
+              )}
+              <a href={`/terrains/${land.id}/rapport`} className="mt-5 inline-flex items-center gap-2 rounded-full bg-forest-900 px-5 py-2.5 text-sm font-medium text-cream-50 hover:bg-forest-800">
+                Télécharger le rapport PDF
+              </a>
             </Section>
           </>
         ) : (

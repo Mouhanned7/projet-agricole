@@ -236,3 +236,17 @@ describe("catalogue et administration (Sprints 4 et 5)", () => {
     expect(p.full_name).toBe("Investisseur");
   });
 });
+
+describe("diagnostic GeoAI (phase 2)", () => {
+  it("D12 : visible du public seulement après validation, écrit par l'admin uniquement", async () => {
+    await db.exec(sql("migrations/20261124000006_diagnostics.sql"));
+    // Supabase accorde ces droits par défaut aux nouvelles tables (privilèges par défaut).
+    await db.exec("grant select, insert, update, delete on land_diagnostics to authenticated, service_role; grant select on land_diagnostics to anon;");
+    await expect(as(OWNER, `insert into land_diagnostics (land_id, data) values ($1, '{}')`, [CAP_BON])).rejects.toThrow(/row-level security/);
+    await as(ADMIN, `insert into land_diagnostics (land_id, data, agri_score) values ($1, '{"summary":"ok"}', 82)`, [CAP_BON]);
+    expect(await as(INVESTOR, `select * from land_diagnostics`)).toHaveLength(0);
+    expect(await as(OWNER, `select * from land_diagnostics`)).toHaveLength(1);
+    await as(ADMIN, `update land_diagnostics set status = 'validated', validated_by = $2, validated_at = now() where land_id = $1`, [CAP_BON, ADMIN]);
+    expect(await as(null, `select agri_score from land_diagnostics`)).toEqual([{ agri_score: 82 }]);
+  });
+});

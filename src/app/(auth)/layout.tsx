@@ -1,11 +1,12 @@
-import { LandVisual } from "@/components/land-visual";
+import Image from "next/image";
+import { PHOTOS, photoUrl } from "@/lib/images";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[1fr_minmax(0,560px)]">
-      <aside className="relative hidden overflow-hidden bg-forest-950 lg:block" aria-hidden>
-        <LandVisual seed={7} className="absolute inset-0 opacity-80" />
-        <div className="absolute inset-0 bg-gradient-to-t from-forest-950 via-forest-950/40 to-transparent" />
+      <aside className="relative m-4 hidden overflow-hidden rounded-[2rem] bg-forest-900 lg:block" aria-hidden>
+        <Image src={photoUrl("grove")} alt={PHOTOS.grove.alt} fill sizes="50vw" priority quality={85} className="object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-forest-950/85 via-forest-950/20 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-12">
           <p className="max-w-md font-serif text-4xl font-semibold leading-tight text-cream-50">
             Des terrains présentés avec leur titre foncier et leur eau.
