@@ -175,7 +175,7 @@ export function StepTitleWater({ draft, patch, showErrors }: StepProps) {
               label="Débit"
               value={w.flowValue}
               onChange={(v) => patch("water", { flowValue: v })}
-              hint="Si vous le connaissez. Il améliore la position de votre terrain."
+              hint="Quantité d'eau donnée par la source. l/s : litres par seconde ; m³/h : mètres cubes par heure (1 l/s = 3,6 m³/h). Exemple : un bidon de 100 litres rempli en 25 secondes donne 4 l/s. Facultatif, mais il améliore la position de votre terrain."
             />
             <div className="sm:pt-7">
               <Choice

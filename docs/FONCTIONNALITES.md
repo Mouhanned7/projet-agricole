@@ -112,7 +112,8 @@ Légende : ✅ fait · 🟡 fait partiellement · ⏳ à faire (phase suivante)
 | Notifications dans l'application (cloche) et par e-mail SMTP | ✅ |
 | En-têtes de sécurité, robots.txt, sitemap.xml, pages 404 et erreur | ✅ |
 | Thème clair et photos haute qualité optimisées | ✅ |
-| Arabe et anglais | ⏳ (prévu dans le code) |
+| Arabe (droite à gauche), bouton « العربية » | ✅ (textes à faire relire) |
+| Anglais | ⏳ |
 | 78 tests automatiques et 35 vérifications de bout en bout | ✅ (`npm test`, `npm run test:live`) |
 
 ## Scripts utiles

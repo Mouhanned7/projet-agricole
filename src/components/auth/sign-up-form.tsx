@@ -49,7 +49,7 @@ export function SignUpForm({ initialRole }: { initialRole: Role | null }) {
                 <span className="font-semibold leading-tight text-ink-900">{title}</span>
                 <span className="text-xs text-ink-600">{text}</span>
                 {checked && (
-                  <span className="absolute right-3 top-3 grid size-5 place-items-center rounded-full bg-forest-800 text-cream-50">
+                  <span className="absolute end-3 top-3 grid size-5 place-items-center rounded-full bg-forest-800 text-cream-50">
                     <Check className="size-3" aria-hidden />
                   </span>
                 )}

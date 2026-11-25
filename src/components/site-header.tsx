@@ -2,7 +2,9 @@ import { Bell, Menu, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ButtonLink } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { getSession } from "@/lib/auth/session";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { homeForRoles } from "@/lib/validation/auth";
 
@@ -16,6 +18,7 @@ const NAV = [
 
 export async function SiteHeader() {
   const session = await getSession();
+  const locale = await getLocale();
   const firstName = session?.profile?.full_name.split(" ")[0];
   const space = session ? homeForRoles(session.profile?.roles ?? []) : null;
   let unread = 0;
@@ -42,6 +45,7 @@ export async function SiteHeader() {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-2 sm:flex">
+          <LanguageSwitcher locale={locale} />
           {session ? (
             <>
               <ButtonLink href={space!} variant="ghost" size="sm">
@@ -68,6 +72,8 @@ export async function SiteHeader() {
         </div>
 
         {/* Menu mobile sans JavaScript */}
+        <LanguageSwitcher locale={locale} className="ms-auto sm:hidden" />
+
         <details className="group relative sm:hidden">
           <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full text-forest-900 hover:bg-forest-900/5 [&::-webkit-details-marker]:hidden">
             <Menu className="size-5 group-open:hidden" aria-hidden />

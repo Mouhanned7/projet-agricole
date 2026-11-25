@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Cormorant_Garamond, Inter, Noto_Sans_Arabic } from "next/font/google";
+import { ArabicTranslator } from "@/components/i18n/arabic-translator";
+import { getLocale } from "@/lib/i18n/server";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Suspense } from "react";
 import { FlashMessage, VerifyEmailBanner } from "@/components/account/verify-email";
@@ -15,6 +17,8 @@ const cormorant = Cormorant_Garamond({
   weight: ["500", "600", "700"],
 });
 
+const arabic = Noto_Sans_Arabic({ variable: "--font-arabic", subsets: ["arabic"], preload: false });
+
 export const metadata: Metadata = {
   title: { default: "VerdOlive — Investir dans l'agriculture tunisienne", template: "%s · VerdOlive" },
   description:
@@ -22,10 +26,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const session = await getSession();
+  const [session, locale] = await Promise.all([getSession(), getLocale()]);
   return (
-    <html lang="fr">
-      <body className={`${inter.variable} ${cormorant.variable} antialiased min-h-screen flex flex-col`}>
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} data-i18n={locale === "ar" ? "pending" : undefined} suppressHydrationWarning>
+      <body className={`${inter.variable} ${cormorant.variable} ${arabic.variable} antialiased min-h-screen flex flex-col`}>
+        {locale === "ar" && <ArabicTranslator />}
         <NuqsAdapter>
           <SiteHeader />
           {session?.profile && !session.profile.email_verified_at && <VerifyEmailBanner email={session.email} />}

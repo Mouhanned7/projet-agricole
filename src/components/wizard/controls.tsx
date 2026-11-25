@@ -94,7 +94,7 @@ export function Choice<T extends string>({
           >
             <span>{o.label}</span>
             {o.hint && <span className={cn("mt-0.5 text-xs font-normal", selected ? "text-cream-100/80" : "text-ink-400")}>{o.hint}</span>}
-            {selected && <Check className="absolute right-3 top-3 size-4" aria-hidden />}
+            {selected && <Check className="absolute end-3 top-3 size-4" aria-hidden />}
           </button>
         );
       })}

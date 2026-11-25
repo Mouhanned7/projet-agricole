@@ -64,7 +64,7 @@ export function ProfileForm({ profile }: { profile: Profile }) {
 
       <SelectField label="Langue" name="locale" defaultValue={v?.locale ?? profile.locale}>
         <option value="fr">Français</option>
-        <option value="ar">العربية (bientôt)</option>
+        <option value="ar">العربية</option>
         <option value="en">English (soon)</option>
       </SelectField>
 
