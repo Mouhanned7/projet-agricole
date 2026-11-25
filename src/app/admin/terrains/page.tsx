@@ -4,10 +4,12 @@ import { AdminLandRow } from "@/components/admin/land-row";
 import { getAdminLands } from "@/lib/admin/queries";
 import { WORKFLOW_LABEL } from "@/lib/lands/labels";
 import { cn } from "@/lib/utils";
+import { requireAdminPage } from "@/lib/admin/guard";
 
 export const metadata: Metadata = { title: "Terrains · Administration" };
 
 export default async function AdminLandsPage({ searchParams }: { searchParams: Promise<{ statut?: string }> }) {
+  await requireAdminPage("/admin/terrains");
   const { statut } = await searchParams;
   const valid = statut && statut in WORKFLOW_LABEL ? statut : null;
   const lands = await getAdminLands(valid ? [valid] : undefined);

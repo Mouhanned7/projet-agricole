@@ -70,3 +70,14 @@ Résultat : **22/22 vérifications réussies**, base revenue à zéro après net
 | 22 | Signalement avec numéro de ticket et alerte admin |
 
 Reste à vérifier à la main (navigateur, avec un vrai compte) : réception des e-mails (confirmation, notifications), parcours de l'assistant au doigt sur téléphone, affichage de la fiche complète une fois connecté.
+
+## Recette étendue (35 vérifications)
+
+Ajouts : inscription publique, liens e-mail de confirmation et de réinitialisation, ajout d'un second profil,
+photo sur la fiche, pages connectées des trois rôles, PDF téléchargé, 27 combinaisons de filtres et tris,
+réglages admin, écritures interdites, pages publiques.
+
+- Site en ligne avant correction : 32/35. Un vrai défaut : les pages `/admin` n'étaient protégées que par la
+  mise en page, leur contenu (limité aux droits de l'utilisateur) était renvoyé à un non-administrateur.
+  Les deux autres échecs venaient du script.
+- Serveur local avec correction : **35/35**.

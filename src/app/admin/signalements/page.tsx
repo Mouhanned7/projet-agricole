@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ReportForm } from "@/components/admin/small-actions";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdminPage } from "@/lib/admin/guard";
 
 export const metadata: Metadata = { title: "Signalements · Administration" };
 
@@ -16,6 +17,7 @@ const STATUS: Record<string, string> = { open: "Ouvert", in_progress: "En cours"
 
 /** RES-09 : file de suivi des signalements, réponse tracée. Délai cible : 72 h ouvrées (D11). */
 export default async function ReportsPage() {
+  await requireAdminPage("/admin/signalements");
   const supabase = await createClient();
   const { data } = await supabase.from("reports").select("*").order("created_at", { ascending: false }).limit(200);
   return (

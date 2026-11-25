@@ -6,6 +6,7 @@ import { ResolveAlertButton } from "@/components/admin/small-actions";
 import { getAdminLands, QUEUE_STATUSES } from "@/lib/admin/queries";
 import { STATUS_LABEL } from "@/lib/domain/ranking";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdminPage } from "@/lib/admin/guard";
 
 export const metadata: Metadata = { title: "Administration" };
 
@@ -18,6 +19,7 @@ const ALERT_LABEL: Record<string, string> = {
 
 /** Tableau de bord (§9) : file de vérification, alertes et statistiques. */
 export default async function AdminHome() {
+  await requireAdminPage();
   const supabase = await createClient();
   const [queue, all, { data: alerts }, { count: openReports }, { count: drafts }, { count: visits }] = await Promise.all([
     getAdminLands(QUEUE_STATUSES),

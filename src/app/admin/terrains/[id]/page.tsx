@@ -14,6 +14,7 @@ import { OBJECTIVE_LABEL, WORKFLOW_LABEL } from "@/lib/lands/labels";
 import { getDraft } from "@/lib/lands/queries";
 import { createClient } from "@/lib/supabase/server";
 import { formatHa, formatTnd } from "@/lib/utils";
+import { requireAdminPage } from "@/lib/admin/guard";
 
 export const metadata: Metadata = { title: "Dossier · Administration" };
 
@@ -50,6 +51,7 @@ function Line({ k, v }: { k: string; v: React.ReactNode }) {
 
 /** Dossier complet pour l'administration (§9) : données privées incluses (numéro de titre, pièces). */
 export default async function AdminLandPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminPage("/admin/terrains");
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const loaded = await getDraft(id);

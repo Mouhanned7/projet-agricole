@@ -8,8 +8,9 @@
  */
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { createServerClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { applyFilters, DEFAULT_FILTERS } from "../src/lib/catalog/filters";
+import { applyFilters, DEFAULT_FILTERS, parseFilters } from "../src/lib/catalog/filters";
 import { rowToItem } from "../src/lib/catalog/map";
 import { computeRanking } from "../src/lib/domain/ranking";
 import { diagnose } from "../src/lib/geoai/diagnose";
@@ -44,7 +45,10 @@ function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
 }
 
-const users: Record<"owner" | "owner2" | "investor" | "admin", { id: string; email: string; client: SupabaseClient }> = {} as never;
+const users: Record<"owner" | "owner2" | "investor" | "admin", { id: string; email: string; client: SupabaseClient; cookie: string }> = {} as never;
+const extraUserIds: string[] = [];
+const photos: string[] = [];
+let originalSettings: { key: string; value: unknown }[] = [];
 const landIds: string[] = [];
 const uploaded: string[] = [];
 
@@ -56,7 +60,15 @@ async function makeUser(key: keyof typeof users, role: "owner" | "investor", ful
   const client = createClient(URL_, ANON, { auth: { persistSession: false } });
   const { error: e2 } = await client.auth.signInWithPassword({ email, password });
   if (e2) throw new Error(`connexion ${key} : ${e2.message}`);
-  users[key] = { id: data.user.id, email, client };
+  // Session « navigateur » (cookies) pour ouvrir les pages connectées du site en ligne.
+  const jar = new Map<string, string>();
+  const web = createServerClient(URL_, ANON, {
+    cookies: { getAll: () => [...jar].map(([name, value]) => ({ name, value })), setAll: (l) => l.forEach((c) => (c.value ? jar.set(c.name, c.value) : jar.delete(c.name))) },
+  });
+  const { error: e3 } = await web.auth.signInWithPassword({ email, password });
+  if (e3) throw new Error(`session web ${key} : ${e3.message}`);
+  await new Promise((r) => setTimeout(r, 300));
+  users[key] = { id: data.user.id, email, client, cookie: [...jar].map(([n, v]) => `${n}=${v}`).join("; ") };
 }
 
 /** Même enchaînement que saveDraft() + recomputeRanking() de l'application. */
@@ -98,10 +110,21 @@ async function recompute(id: string, draft: ReturnType<typeof draftSchema.parse>
   return r;
 }
 
-const page = async (path: string) => {
-  const res = await fetch(`${SITE}${path}`, { redirect: "manual" });
-  return { status: res.status, location: res.headers.get("location") ?? "", html: res.status === 200 ? await res.text() : "" };
+const page = async (path: string, cookie?: string) => {
+  const res = await fetch(`${SITE}${path}`, { redirect: "manual", headers: cookie ? { cookie } : {} });
+  const html = (await res.text()).replace(/<!-- -->/g, "").replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+  return { status: res.status, location: res.headers.get("location") ?? "", type: res.headers.get("content-type") ?? "", html };
 };
+
+/** Une page connectée doit répondre 200, sans écran d'erreur, avec les textes attendus. */
+async function expectPage(path: string, who: keyof typeof users, texts: string[]) {
+  const r = await page(path, users[who].cookie);
+  assert(r.status === 200, `${path} (${who}) : HTTP ${r.status} ${r.location}`);
+  assert(!r.html.includes(">Une erreur est survenue</h1>"), `${path} (${who}) : écran d'erreur`);
+  const missing = texts.filter((t) => !r.html.includes(t));
+  assert(missing.length === 0, `${path} (${who}) : absent → ${missing.join(" | ")}`);
+  return r;
+}
 
 // Terrains de test
 const A: LandDraftInput = {
@@ -365,11 +388,170 @@ async function main() {
     const t = await anon.from("land_titles").select("number").limit(1);
     assert((t.data ?? []).length === 0, "numéros de titre lisibles sans compte");
   });
+
+  // ------------------------------------------------------------------
+  // Pages connectées, filtres, liens e-mail, réglages, sécurité
+  // ------------------------------------------------------------------
+  await check("INS", "Inscription par l'API publique : compte créé et connecté immédiatement (INS-05)", async () => {
+    const settings = await fetch(`${URL_}/auth/v1/settings`, { headers: { apikey: ANON } }).then((r) => r.json());
+    assert(settings.mailer_autoconfirm === true, "« Confirm email » est activé dans Supabase : le désactiver");
+    const c = createClient(URL_, ANON, { auth: { persistSession: false } });
+    const { data, error } = await c.auth.signUp({ email: `e2e-${RUN}-signup@verdolive.test`, password: randomBytes(18).toString("base64url"), options: { data: { full_name: "Nouvel Inscrit", role: "owner" } } });
+    if (data.user) extraUserIds.push(data.user.id);
+    assert(!error, `inscription : ${error?.message}`);
+    assert(data.session, "pas de session immédiate");
+    const { data: p } = await c.from("profiles").select("roles, email_verified_at").eq("id", data.user!.id).single();
+    assert(p?.roles?.[0] === "owner" && p.email_verified_at === null, "profil incorrect");
+  });
+
+  await check("LIEN", "Lien e-mail de confirmation sur le site en ligne : adresse vérifiée et redirection", async () => {
+    const id = extraUserIds[0];
+    assert(id, "dépend du test d'inscription");
+    const { data, error } = await service.auth.admin.generateLink({ type: "magiclink", email: `e2e-${RUN}-signup@verdolive.test` });
+    assert(!error, `génération du lien : ${error?.message}`);
+    const r = await page(`/auth/confirm?token_hash=${data.properties!.hashed_token}&type=magiclink`);
+    assert(r.status === 307 && r.location.includes("/espace-porteur") && r.location.includes("verifie=1"), `redirection : ${r.status} ${r.location}`);
+    const { data: p } = await service.from("profiles").select("email_verified_at").eq("id", id).single();
+    assert(p?.email_verified_at, "adresse non marquée vérifiée (clé serveur sur Vercel ?)");
+    const again = await page(`/auth/confirm?token_hash=${data.properties!.hashed_token}&type=magiclink`);
+    assert(again.location.includes("/auth/erreur"), "un lien déjà utilisé est accepté");
+  });
+
+  await check("MDP", "Lien de réinitialisation : arrive sur le choix du nouveau mot de passe", async () => {
+    const { data, error } = await service.auth.admin.generateLink({ type: "recovery", email: users.investor.email });
+    assert(!error, error?.message ?? "");
+    const r = await page(`/auth/confirm?token_hash=${data.properties!.hashed_token}&type=recovery`);
+    assert(r.location.includes("/compte/nouveau-mot-de-passe"), `redirection : ${r.status} ${r.location}`);
+  });
+
+  await check("INS-09", "Un même compte ajoute le profil porteur sans nouvelle inscription", async () => {
+    const { error } = await users.investor.client.from("profiles").update({ roles: ["investor", "owner"] }).eq("id", users.investor.id);
+    assert(!error, error?.message ?? "");
+  });
+
+  await check("PHOTO", "Photo déposée par le porteur, affichée sur la fiche publique", async () => {
+    const path = `${a.id}/photo-${RUN}.png`;
+    const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+    const { error } = await users.owner.client.storage.from("land-photos").upload(path, new Blob([png], { type: "image/png" }));
+    assert(!error, `dépôt : ${error?.message}`);
+    photos.push(path);
+    await users.owner.client.from("land_photos").insert({ land_id: a.id, storage_path: path, position: 0 });
+    const r = await page(`/terrains/${a.id}`);
+    const m = r.html.match(/https:[^"' \\]*object\/sign\/land-photos[^"' \\]*/);
+    assert(m, "photo absente de la fiche");
+    const img = await fetch(m[0]);
+    assert(img.ok, `photo illisible : HTTP ${img.status}`);
+  });
+
+  await check("P-INV", "Pages investisseur connectées (fiche complète, favoris, visites, compte)", async () => {
+    await expectPage(`/terrains/${a.id}`, "investor", ["Indicateurs du dossier", "Conditions proposées", "Aptitude par culture", "Pression sur", "Étude économique", "Télécharger le rapport PDF", "Frais VerdOlive"]);
+    await expectPage(`/terrains/${b.id}`, "investor", ["Partage de la valeur envisagé", "Contribution", "Financement", "Commission de 3 %"]);
+    await expectPage("/catalogue", "investor", [`/terrains/${a.id}`]);
+    await expectPage("/carte", "investor", ["Carte des terrains"]);
+    await expectPage("/compte", "investor", ["Mon compte", "Mes profils", "Mes informations"]);
+    await expectPage("/compte/favoris", "investor", [`/terrains/${a.id}`]);
+    await expectPage("/compte/visites", "investor", ["Mes demandes de visite", `[TEST ${RUN}] Oliveraie`]);
+    await expectPage("/compte/notifications", "investor", ["Notifications"]);
+    await expectPage("/compte/nouveau-mot-de-passe", "investor", ["Nouveau mot de passe"]);
+  });
+
+  await check("17b", "Rapport PDF téléchargé par un compte connecté", async () => {
+    const res = await fetch(`${SITE}/terrains/${a.id}/rapport`, { headers: { cookie: users.investor.cookie } });
+    const bytes = Buffer.from(await res.arrayBuffer());
+    assert(res.status === 200, `HTTP ${res.status}`);
+    assert(bytes.subarray(0, 4).toString() === "%PDF", "le fichier n'est pas un PDF");
+    return `${Math.round(bytes.length / 1024)} Ko`;
+  });
+
+  await check("P-OWN", "Pages porteur connectées (espace, assistant, reprise de brouillon, visites, notifications)", async () => {
+    const draft = await saveLand(users.owner.client, users.owner.id, { ...A, name: `[TEST ${RUN}] brouillon`, title: { answer: "unknown" } }, 4);
+    await expectPage("/espace-porteur", "owner", ["Bonjour Porteur", `[TEST ${RUN}] brouillon`, "Reprendre"]);
+    await expectPage("/espace-porteur/terrains/nouveau", "owner", ["Votre objectif", "sur 7"]);
+    await expectPage(`/espace-porteur/terrains/${draft.id}`, "owner", ["Étape 4 sur 7", "État du terrain"]);
+    await expectPage(`/espace-porteur/terrains/${a.id}`, "owner", ["Statut", "Publié"]);
+    await expectPage("/espace-porteur/visites", "owner", ["Investisseur Test", "Visite test"]);
+    await expectPage("/compte/notifications", "owner", ["Nouvelle demande de visite"]);
+    const other = await page(`/espace-porteur/terrains/${draft.id}`, users.owner2.cookie);
+    assert(!other.html.includes(`[TEST ${RUN}] brouillon`), "un autre porteur voit le brouillon");
+  });
+
+  await check("P-ADM", "Pages administrateur connectées (tableau de bord, dossier, signalements, réglages)", async () => {
+    await expectPage("/admin", "admin", ["Tableau de bord", "File de vérification", "Alertes"]);
+    await expectPage("/admin/terrains", "admin", [`[TEST ${RUN}] Oliveraie`]);
+    await expectPage(`/admin/terrains/${a.id}`, "admin", ["Titre foncier (privé)", `E2E-${RUN}/12`, "Diagnostic GeoAI", "Historique", "Pièces justificatives"]);
+    await expectPage(`/admin/terrains/${b.id}`, "admin", ["Traitement du dossier"]);
+    await expectPage("/admin/signalements", "admin", [`[TEST ${RUN}] litige limite nord`]);
+    await expectPage("/admin/reglages", "admin", ["Ordre du tri"]);
+    for (const who of ["investor", "owner2"] as const) {
+      const r = await page("/admin", users[who].cookie);
+      assert(r.status === 404 || r.html.includes("Page introuvable"), `${who} accède à /admin (HTTP ${r.status})`);
+      assert(!r.html.includes("File de vérification"), `${who} reçoit le contenu du tableau de bord (HTTP ${r.status})`);
+    }
+  });
+
+  await check("FILTRES", "Filtres et tris sur le site en ligne identiques au calcul attendu", async () => {
+    const queries = [
+      "", "titre=verifie", "eau=avec", "eau=preuve", "offre=sale", "offre=rent,partnership", "gouv=nabeul", "gouv=kairouan&deleg=kairouan-haffouz",
+      "surfMin=25", "surfMax=18", "budMax=10000&tous=1", "budMin=500000", "source=well", "dispo=year_round", "debitMin=5", "foncier=verified",
+      "culture=olivier", "plantations=oui", "statut=low", "potentielMin=50", "tous=1&tri=prix_asc", "tous=1&tri=prix_desc", "tous=1&tri=surface_asc",
+      "tous=1&tri=surface_desc", "tri=recents", "tri=debit", "tri=potentiel",
+    ];
+    const { data } = await anon.from("catalog_lands").select("*");
+    const items = (data ?? []).map((r) => rowToItem(r));
+    const bad: string[] = [];
+    for (const q of queries) {
+      const expected = applyFilters(items, parseFilters(Object.fromEntries(new URLSearchParams(q)))).items.map((l) => l.id);
+      const r = await page(`/catalogue?${q}`);
+      const body = r.html.replace(/<script[\s\S]*?<\/script>/g, "");
+      const shown = [...new Set([...body.matchAll(/href="\/terrains\/([0-9a-f-]{36})"/g)].map((m) => m[1]))];
+      if (r.status !== 200 || shown.join() !== expected.join()) bad.push(`${q || "(défaut)"} : ${shown.length} au lieu de ${expected.length}`);
+    }
+    assert(bad.length === 0, bad.join(" ; "));
+    return `${queries.length} combinaisons`;
+  });
+
+  await check("CLA-04", "L'admin modifie les réglages : le catalogue en tient compte", async () => {
+    originalSettings = (await service.from("settings").select("key, value")).data ?? [];
+    const { error } = await users.admin.client.from("settings").upsert({ key: "catalog.show_low_by_default", value: true, updated_by: users.admin.id });
+    assert(!error, error?.message ?? "");
+    const r = await page("/catalogue");
+    assert(r.html.includes(`/terrains/${c.id}`), "le réglage n'est pas appliqué");
+    const no = await users.investor.client.from("settings").update({ value: false }).eq("key", "catalog.show_low_by_default").select();
+    assert((no.data ?? []).length === 0, "un investisseur a modifié les réglages");
+  });
+
+  await check("SEC-2", "Écritures interdites entre utilisateurs et sans compte", async () => {
+    const u1 = await users.owner2.client.from("lands").update({ title: "piraté" }).eq("id", a.id).select();
+    assert((u1.data ?? []).length === 0, "un autre porteur modifie le terrain");
+    const u2 = await users.owner2.client.from("land_titles").select("number").eq("land_id", a.id);
+    assert((u2.data ?? []).length === 0, "un autre porteur lit le numéro de titre");
+    const u3 = await users.owner2.client.storage.from("land-photos").upload(`${a.id}/intrus-${RUN}.png`, new Blob(["x"], { type: "image/png" }));
+    assert(u3.error, "un autre porteur dépose une photo");
+    const u4 = await anon.from("lands").insert({ owner_id: users.owner.id }).select();
+    assert(u4.error, "création sans compte possible");
+    const u5 = await users.investor.client.from("land_diagnostics").update({ status: "validated" }).eq("land_id", a.id).select();
+    assert((u5.data ?? []).length === 0, "un investisseur modifie le diagnostic");
+    const u6 = await users.investor.client.from("profiles").select("id");
+    assert((u6.data ?? []).length === 1, "un investisseur lit les profils des autres");
+  });
+
+  await check("PUB", "Pages publiques, plan du site et pages inexistantes", async () => {
+    for (const p of ["/", "/catalogue", "/carte", "/inscription", "/connexion", "/mot-de-passe-oublie", "/conditions", "/confidentialite", "/charte", "/credits", "/robots.txt", "/sitemap.xml", "/vendor/mapbox-gl-rtl-text.js"]) {
+      const r = await page(p);
+      assert(r.status === 200, `${p} : HTTP ${r.status}`);
+    }
+    for (const p of ["/inexistant", "/terrains/00000000-0000-4000-8000-999999999999", "/dev/assistant"]) {
+      const r = await page(p);
+      assert(r.status === 404 || r.html.includes("Page introuvable"), `${p} : HTTP ${r.status}`);
+    }
+  });
 }
 
 async function cleanup() {
   console.log("\nNettoyage…");
-  const ids = Object.values(users).map((u) => u.id);
+  const ids = [...Object.values(users).map((u) => u.id), ...extraUserIds];
+  for (const s of originalSettings) await service.from("settings").update({ value: s.value, updated_by: null }).eq("key", s.key);
+  if (photos.length) await service.storage.from("land-photos").remove(photos);
   if (uploaded.length) await service.storage.from("land-documents").remove(uploaded);
   const { data: owned } = ids.length ? await service.from("lands").select("id").in("owner_id", ids) : { data: [] };
   const allLands = [...new Set([...landIds, ...(owned ?? []).map((l) => l.id)])];
