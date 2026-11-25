@@ -42,6 +42,7 @@ export default async function AccountPage() {
         <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
           {[
             ["/compte/notifications", "Notifications"],
+            ["/compte/messages", "Messages"],
             ["/compte/favoris", "Mes favoris"],
             ["/compte/recherches", "Mes recherches"],
             ["/compte/visites", "Mes demandes de visite"],

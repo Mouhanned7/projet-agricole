@@ -6,6 +6,9 @@ const NAV = [
   ["/admin", "Tableau de bord"],
   ["/admin/terrains", "Terrains"],
   ["/admin/comptes", "Comptes"],
+  ["/admin/transactions", "Transactions"],
+  ["/admin/prestataires", "Prestataires"],
+  ["/admin/statistiques", "Statistiques"],
   ["/admin/signalements", "Signalements"],
   ["/admin/reglages", "Réglages"],
 ] as const;

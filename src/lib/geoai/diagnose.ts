@@ -36,7 +36,7 @@ const round = (n: number, d = 1) => Math.round(n * 10 ** d) / 10 ** d;
 
 async function getJson(f: Fetch, url: string, ms = 15000): Promise<unknown | null> {
   try {
-    const r = await f(url, { signal: AbortSignal.timeout(ms), headers: { "User-Agent": "VerdOlive/1.0 (diagnostic agricole)" } });
+    const r = await f(url, { signal: AbortSignal.timeout(ms), headers: { "User-Agent": "VerdOlive/1.0 (diagnostic agricole)", Accept: "application/json" } });
     return r.ok ? await r.json() : null;
   } catch {
     return null;
@@ -98,6 +98,18 @@ export async function fetchSoil(lat: number, lng: number, f: Fetch = fetch) {
   return Object.values(out).some((v) => v != null) ? out : null;
 }
 
+/** Végétation vue par satellite : NDVI MODIS 250 m (NASA, ORNL DAAC), 16 derniers jours disponibles. */
+export async function fetchNdvi(lat: number, lng: number, f: Fetch = fetch) {
+  const base = `https://modis.ornl.gov/rst/api/v1/MOD13Q1`;
+  const dates = (await getJson(f, `${base}/dates?latitude=${lat}&longitude=${lng}`)) as { dates?: { modis_date: string }[] } | null;
+  const last = dates?.dates?.slice(-10);
+  if (!last?.length) return null;
+  const url = `${base}/subset?latitude=${lat}&longitude=${lng}&band=250m_16_days_NDVI&startDate=${last[0].modis_date}&endDate=${last[last.length - 1].modis_date}&kmAboveBelow=0&kmLeftRight=0`;
+  const j = (await getJson(f, url, 20000)) as { subset?: { data: number[] }[] } | null;
+  const v = (j?.subset ?? []).map((s) => s.data[0]).filter((x) => x > -2000).map((x) => x / 10000);
+  return v.length ? round(v.reduce((a, b) => a + b, 0) / v.length, 2) : null;
+}
+
 export interface DiagnoseInput {
   lat: number;
   lng: number;
@@ -108,8 +120,14 @@ export interface DiagnoseInput {
 }
 
 export async function diagnose(input: DiagnoseInput, f: Fetch = fetch, now = new Date()): Promise<Diagnostic> {
-  const [climate, soil] = await Promise.all([fetchClimate(input.lat, input.lng, f), fetchSoil(input.lat, input.lng, f)]);
-  return buildDiagnostic(input, climate, soil, now);
+  const [climate, soil, ndvi] = await Promise.all([fetchClimate(input.lat, input.lng, f), fetchSoil(input.lat, input.lng, f), fetchNdvi(input.lat, input.lng, f)]);
+  const result = buildDiagnostic(input, climate, soil, now);
+  if (ndvi != null) {
+    const level = ndvi < 0.2 ? "sol nu ou végétation très faible" : ndvi < 0.4 ? "végétation clairsemée (cultures sèches, vergers espacés)" : "végétation dense";
+    result.dataPoints.push({ label: "Indice de végétation (NDVI, 5 mois)", value: `${ndvi} : ${level}`, nature: "mesuré", source: "Satellite MODIS 250 m (NASA ORNL DAAC)" });
+    result.sources.push("MODIS MOD13Q1 (NASA ORNL DAAC), imagerie satellite");
+  }
+  return result;
 }
 
 export function buildDiagnostic(

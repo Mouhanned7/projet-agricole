@@ -11,7 +11,9 @@ import { getDiagnostic } from "@/lib/geoai/service";
 import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge, TitlePill, WaterPill } from "@/components/ui/proof-pills";
 import { getSession } from "@/lib/auth/session";
-import { getCatalogItem } from "@/lib/catalog/source";
+import { priceBenchmark } from "@/lib/catalog/price";
+import { getCatalogItem, getCatalogItems } from "@/lib/catalog/source";
+import { sendMessage } from "@/lib/extras/actions";
 import type { CatalogItem } from "@/lib/catalog/types";
 import { WATER_SOURCES } from "@/lib/lands/draft";
 import { OBJECTIVE_LABEL } from "@/lib/lands/labels";
@@ -95,6 +97,7 @@ export default async function LandPage({ params }: { params: Promise<{ id: strin
   }
   const loggedIn = Boolean(session);
   const price = priceLine(land);
+  const bench = land.objective === "sale" ? priceBenchmark(land, (await getCatalogItems()).items) : null;
   const details = land.offerDetails as Record<string, string | number | boolean | null>;
 
   return (
@@ -154,6 +157,13 @@ export default async function LandPage({ params }: { params: Promise<{ id: strin
             <p className="text-3xl font-semibold text-forest-900">{price.value}</p>
             {land.objective === "sale" && land.negotiable && <p className="text-sm text-ink-600">Négociable : {land.negotiable === "unknown" ? "à discuter" : YNU[land.negotiable]}</p>}
           </div>
+
+          {bench && (
+            <p className="mt-2 text-sm text-ink-600">
+              Repère ({bench.zone}, {bench.count} ventes) : médiane {formatTnd(bench.perHa)} / ha, de {formatTnd(bench.low)} à {formatTnd(bench.high)}.
+              {land.priceTnd && land.areaHa && land.priceTnd / land.areaHa > bench.perHa * 1.5 ? " Ce prix est nettement au-dessus de la zone." : ""} Indicatif.
+            </p>
+          )}
 
           <div className="mt-5 grid gap-3">
             <VisitRequest
@@ -359,6 +369,20 @@ export default async function LandPage({ params }: { params: Promise<{ id: strin
                   générer de contrat : les modalités finales sont à formaliser avec des professionnels.
                 </p>
               </div>
+            </Section>
+
+            <Section id="message" title="Écrire au propriétaire">
+              <form action={sendMessage} className="space-y-3">
+                <input type="hidden" name="land" value={land.id} />
+                <textarea name="body" required rows={3} maxLength={2000} placeholder="Votre question" className="w-full rounded-xl border border-forest-900/15 px-3 py-2" />
+                {!session?.profile?.charter_accepted_at && (
+                  <label className="flex gap-2 text-sm">
+                    <input type="checkbox" name="charter" required className="size-5" />
+                    <span>J&apos;accepte la <Link href="/charte" className="underline">charte de l&apos;investissement responsable</Link>.</span>
+                  </label>
+                )}
+                <button className="rounded-full bg-forest-900 px-5 py-2.5 text-sm font-medium text-cream-50">Envoyer le message</button>
+              </form>
             </Section>
 
             <Section id="diagnostic" title="Diagnostic agricole et étude économique" icon={<Sprout className="size-5 text-olive-600" aria-hidden />}>

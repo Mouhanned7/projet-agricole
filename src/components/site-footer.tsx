@@ -32,6 +32,8 @@ export function SiteFooter() {
             <Link href="/conditions" className="hover:text-forest-800">Conditions d&apos;utilisation</Link>
             <Link href="/confidentialite" className="hover:text-forest-800">Confidentialité</Link>
             <Link href="/charte" className="hover:text-forest-800">Charte de l&apos;investissement responsable</Link>
+            <Link href="/prestataires" className="hover:text-forest-800">Prestataires</Link>
+            <Link href="/impact" className="hover:text-forest-800">Impact</Link>
             <Link href="/credits" className="hover:text-forest-800">Crédits photos</Link>
           </nav>
           <p>© {new Date().getFullYear()} VerdOlive</p>
