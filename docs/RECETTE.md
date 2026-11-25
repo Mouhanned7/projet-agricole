@@ -45,3 +45,28 @@ Légende : ✅ automatisé · 👤 à vérifier à la main avec Supabase configu
 - [ ] SMTP configuré dans Supabase et variables `SMTP_*` dans Vercel (voir docs/SMTP.md).
 - [ ] Nom de domaine relié à Vercel, `NEXT_PUBLIC_SITE_URL` et URLs Supabase mis à jour.
 - [ ] Sauvegardes quotidiennes (offre Supabase Pro).
+
+## Recette de bout en bout sur le site en ligne (25/11/2026)
+
+Commande : `npm run test:live` (crée 4 comptes de test `@verdolive.test` et 4 terrains « [TEST] » dans la vraie base, joue les scénarios contre la base et https://verdolive-kappa.vercel.app, puis supprime tout).
+
+Résultat : **22/22 vérifications réussies**, base revenue à zéro après nettoyage.
+
+| Scénarios | Vérifié en ligne |
+|---|---|
+| 1, 2 | Profil et rôle créés à l'inscription ; rôle admin refusé |
+| 3 à 6, 20 | Titre / eau / indivision obligatoires avant soumission |
+| 7 | Brouillon enregistré à l'étape 4 et relu à l'identique |
+| D7 | Soumission refusée tant que l'e-mail n'est pas confirmé ; un porteur ne peut pas publier |
+| 8, 9, 13 | Publication, ordre « Recommandés », cas D masqué, filtres et compteur sur le site |
+| 10 | « Titre déclaré » à la saisie, « Titre vérifié » seulement par l'admin, raison mise à jour |
+| 11 | Alerte admin sur numéro de titre en doublon |
+| 12 | Statut changé par l'admin, note journalisée, porteur notifié |
+| 14, 19 | Favori ; visite refusée sans charte puis acceptée ; visible du porteur et de l'admin ; notification |
+| 15, 16 | Diagnostic GeoAI réel (Open-Meteo), natures des données, visible du public seulement après validation |
+| 17 | Rapport PDF réservé aux comptes (génération testée par `npm test`) |
+| 18 | Titre foncier illisible par un autre porteur et par un investisseur, lisible par l'admin |
+| 21, 23 | Eau partagée, indivision, répartition Mgharsa et frais sur la fiche publique |
+| 22 | Signalement avec numéro de ticket et alerte admin |
+
+Reste à vérifier à la main (navigateur, avec un vrai compte) : réception des e-mails (confirmation, notifications), parcours de l'assistant au doigt sur téléphone, affichage de la fiche complète une fois connecté.
