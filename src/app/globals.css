@@ -119,3 +119,25 @@ label:has(input) {
     transform: translateX(300%);
   }
 }
+
+/* Téléphone */
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+body {
+  overflow-wrap: break-word;
+}
+@media (max-width: 640px) {
+  /* Évite le zoom automatique d'iOS à la saisie */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  .maplibregl-ctrl-attrib {
+    font-size: 10px;
+  }
+}

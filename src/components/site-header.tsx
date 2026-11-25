@@ -1,6 +1,7 @@
 import { Bell, Menu, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { MobileMenu } from "@/components/mobile-menu";
 import { ButtonLink } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { getSession } from "@/lib/auth/session";
@@ -36,7 +37,7 @@ export async function SiteHeader() {
           <Logo />
         </Link>
 
-        <nav aria-label="Navigation principale" className="hidden items-center gap-5 xl:gap-7 lg:flex">
+        <nav aria-label="Navigation principale" className="hidden items-center gap-6 xl:flex">
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className="whitespace-nowrap text-sm font-medium text-ink-600 transition-colors hover:text-forest-800">
               {n.label}
@@ -44,7 +45,7 @@ export async function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+        <div className="hidden shrink-0 items-center gap-2 xl:flex">
           <LanguageSwitcher locale={locale} />
           {session ? (
             <>
@@ -72,15 +73,15 @@ export async function SiteHeader() {
         </div>
 
         {/* Menu mobile sans JavaScript */}
-        <LanguageSwitcher locale={locale} className="ms-auto sm:hidden" />
+        <LanguageSwitcher locale={locale} className="ms-auto xl:hidden" />
 
-        <details className="group relative sm:hidden">
+        <MobileMenu>
           <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full text-forest-900 hover:bg-forest-900/5 [&::-webkit-details-marker]:hidden">
             <Menu className="size-5 group-open:hidden" aria-hidden />
             <X className="hidden size-5 group-open:block" aria-hidden />
             <span className="sr-only">Menu</span>
           </summary>
-          <div className="fixed inset-x-0 top-16 border-b border-t border-forest-900/10 bg-white px-4 pb-6 pt-2 shadow-lg">
+          <div className="fixed inset-x-0 top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-t border-forest-900/10 bg-white px-4 pb-6 pt-2 shadow-lg sm:px-6">
             <nav aria-label="Navigation mobile" className="flex flex-col">
               {NAV.map((n) => (
                 <Link key={n.href} href={n.href} className="border-b border-forest-900/10 py-3.5 font-medium text-ink-900">
@@ -102,7 +103,7 @@ export async function SiteHeader() {
               )}
             </div>
           </div>
-        </details>
+        </MobileMenu>
       </div>
     </header>
   );
