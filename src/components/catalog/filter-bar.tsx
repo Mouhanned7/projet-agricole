@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { CROPS, DEFAULT_FILTERS, filtersToSearch, SORTS, type CatalogFilters, type SortKey } from "@/lib/catalog/filters";
 import { GOVERNORATES, delegationId } from "@/lib/data/tunisia";
-import { WATER_SOURCES } from "@/lib/lands/draft";
+import { EQUIPMENT, SOIL_TYPES, WATER_SOURCES } from "@/lib/lands/draft";
 import { cn } from "@/lib/utils";
 
 const OFFERS = [
@@ -288,6 +288,23 @@ export function FilterBar({ filters, total, basePath }: { filters: CatalogFilter
                   ))}
                 </div>
               </section>
+              {(
+                [
+                  ["sol", "Type de sol", SOIL_TYPES],
+                  ["equip", "Équipements", EQUIPMENT],
+                ] as const
+              ).map(([key, title, values]) => (
+                <section key={key}>
+                  <h3 className="text-sm font-semibold text-ink-900">{title}</h3>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {values.map((v) => (
+                      <Toggle key={v} on={filters[key].includes(v)} onClick={() => apply({ [key]: toggleIn(filters[key], v) })}>
+                        {v}
+                      </Toggle>
+                    ))}
+                  </div>
+                </section>
+              ))}
               <section>
                 <h3 className="text-sm font-semibold text-ink-900">Plantations existantes</h3>
                 <div className="mt-2 flex flex-wrap gap-2">

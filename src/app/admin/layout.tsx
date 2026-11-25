@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth/session";
 const NAV = [
   ["/admin", "Tableau de bord"],
   ["/admin/terrains", "Terrains"],
+  ["/admin/comptes", "Comptes"],
   ["/admin/signalements", "Signalements"],
   ["/admin/reglages", "Réglages"],
 ] as const;

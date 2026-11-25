@@ -19,7 +19,8 @@ export default async function EditLandPage({ params }: { params: Promise<{ id: s
   const loaded = await getDraft(id);
   if (!loaded) notFound();
 
-  if (!EDITABLE_STATUSES.includes(loaded.status)) {
+  // L'administration peut corriger un dossier (§9) ; l'historique des réponses est conservé.
+  if (!EDITABLE_STATUSES.includes(loaded.status) && !session.profile?.roles.includes("admin")) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
         <p className="text-sm text-ink-400">{loaded.ref}</p>

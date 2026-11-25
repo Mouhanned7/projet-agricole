@@ -40,6 +40,8 @@ export function rowToItem(r: Row, photoUrls: string[] = []): CatalogItem {
     crops: s(r.crops),
     trees: ((r.trees as Row[] | null) ?? []).map((t) => ({ species: String(t.species ?? ""), count: n(t.count), age: s(t.age) })),
     buildings: s(r.buildings),
+    practices: (r.practices as string[] | null) ?? [],
+    extra: (r.soil as CatalogItem["extra"] | null) ?? {},
     rankingStatus: r.ranking_status as CatalogItem["rankingStatus"],
     rankingReason: String(r.ranking_reason ?? ""),
     titleProof: r.title_proof as CatalogItem["titleProof"],

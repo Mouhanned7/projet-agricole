@@ -43,6 +43,7 @@ export default async function AccountPage() {
           {[
             ["/compte/notifications", "Notifications"],
             ["/compte/favoris", "Mes favoris"],
+            ["/compte/recherches", "Mes recherches"],
             ["/compte/visites", "Mes demandes de visite"],
             ...(roles.includes("owner") ? [["/espace-porteur/visites", "Visites reçues"]] : []),
             ["/compte/nouveau-mot-de-passe", "Changer de mot de passe"],

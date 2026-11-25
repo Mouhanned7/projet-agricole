@@ -2,6 +2,7 @@ import { ArrowLeft, Droplets, FileText, Info, Lock, MapPin, Maximize2, Sprout, T
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PointMap } from "@/components/catalog/point-map";
 import { LandPhoto } from "@/components/land-photo";
 import { priceLine } from "@/components/land-card";
 import { DiagnosticView } from "@/components/land/diagnostic-view";
@@ -266,8 +267,32 @@ export default async function LandPage({ params }: { params: Promise<{ id: strin
                 {land.crops && <Row label="Cultures">{land.crops}</Row>}
                 {land.buildings && <Row label="Constructions">{land.buildings}</Row>}
                 {land.latApprox != null && <Row label="Zone">≈ {land.latApprox}, {land.lngApprox} (position approximative)</Row>}
+                {land.extra.soilType && <Row label="Type de sol">{land.extra.soilType}</Row>}
+                {land.extra.soilAnalyses && <Row label="Analyses de sol (déclarées)">{land.extra.soilAnalyses}</Row>}
+                {!!land.extra.equipment?.length && <Row label="Équipements">{land.extra.equipment.join(", ")}</Row>}
+                {land.extra.treesValueTnd != null && <Row label="Valeur des arbres (estimée par le porteur)">{formatTnd(land.extra.treesValueTnd)}</Row>}
+                {land.extra.buildingsValueTnd != null && <Row label="Valeur des constructions (estimée)">{formatTnd(land.extra.buildingsValueTnd)}</Row>}
+                {land.extra.worksTnd != null && <Row label="Travaux nécessaires (estimés)">{formatTnd(land.extra.worksTnd)}</Row>}
+                {land.extra.currentOperation && <Row label="Exploitation actuelle">{land.extra.currentOperation}</Row>}
+                {!!land.practices.length && <Row label="Pratiques durables déclarées">{land.practices.join(", ")}</Row>}
+                {land.extra.localKnowledge && <Row label="Variétés et savoir-faire locaux">{land.extra.localKnowledge}</Row>}
+                {land.extra.localJobs != null && <Row label="Emplois locaux prévus">{land.extra.localJobs}</Row>}
               </dl>
+              {land.latApprox != null && land.lngApprox != null && (
+                <div className="mt-4">
+                  <PointMap lat={land.latApprox} lng={land.lngApprox} />
+                </div>
+              )}
             </Section>
+
+            {Boolean(details.ownerExperience || details.ownerParticipates != null) && (
+              <Section id="proprietaire" title="Le propriétaire">
+                <dl className="divide-y divide-forest-900/5">
+                  {details.ownerExperience && <Row label="Expérience et disponibilité">{String(details.ownerExperience)}</Row>}
+                  {details.ownerParticipates != null && <Row label="Participe au projet">{details.ownerParticipates ? "Oui" : "Non"}</Row>}
+                </dl>
+              </Section>
+            )}
 
             {/* Conditions de l'offre (§3.4, RES-06) */}
             <Section id="conditions" title="Conditions proposées" icon={<Sprout className="size-5 text-olive-600" aria-hidden />}>

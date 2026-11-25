@@ -1,4 +1,4 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { CatalogItem } from "@/lib/catalog/types";
 import { STATUS_LABEL } from "@/lib/domain/ranking";
 import { LEVEL_LABEL } from "@/lib/geoai/crops";
@@ -50,11 +50,22 @@ export function LandReport({ land, diag, generatedAt }: { land: CatalogItem; dia
           Référence {land.ref} · {OBJ[land.objective]} · {[land.delegation, land.governorate].filter(Boolean).join(", ")}
         </Text>
 
+        {land.photoUrls.length > 0 && (
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+            {land.photoUrls.slice(0, 2).map((u) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={u} src={u} style={{ width: 250, height: 150, objectFit: "cover" }} />
+            ))}
+          </View>
+        )}
         <Text style={s.h2}>1. Informations générales</Text>
         <Row k="Superficie" v={land.areaHa != null ? `${land.areaHa} ha${land.exploitableAreaHa != null ? ` (${land.exploitableAreaHa} ha exploitables)` : ""}` : null} />
         <Row k="Localisation approximative" v={land.latApprox != null ? `${land.latApprox}, ${land.lngApprox}` : null} />
         <Row k="État" v={land.state ? { exploited: "Exploité", partial: "Partiellement exploité", abandoned: "Abandonné" }[land.state] : null} />
         <Row k="Plantations" v={land.trees.map((t) => [t.species, t.count && `${t.count} arbres`, t.age].filter(Boolean).join(", ")).join(" ; ") || land.crops} />
+        <Row k="Type de sol" v={land.extra.soilType} />
+        <Row k="Équipements" v={land.extra.equipment?.join(", ")} />
+        <Row k="Carte" v={land.latApprox != null ? `https://www.openstreetmap.org/?mlat=${land.latApprox}&mlon=${land.lngApprox}#map=12/${land.latApprox}/${land.lngApprox}` : null} />
         <Row k="Photos disponibles" v={`${land.photoUrls.length}`} />
 
         <Text style={s.h2}>2. Situation foncière et eau</Text>

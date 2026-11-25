@@ -28,6 +28,19 @@ export interface CatalogItem {
   crops: string | null;
   trees: { species: string; count: number | null; age: string | null }[];
   buildings: string | null;
+  practices: string[];
+  /** Sol, équipements, valeurs, savoir-faire (colonne soil). */
+  extra: {
+    soilType?: string | null;
+    soilAnalyses?: string | null;
+    equipment?: string[];
+    treesValueTnd?: number | null;
+    buildingsValueTnd?: number | null;
+    worksTnd?: number | null;
+    currentOperation?: string | null;
+    localKnowledge?: string | null;
+    localJobs?: number | null;
+  };
   rankingStatus: RankingStatus;
   rankingReason: string;
   titleProof: TitleProof;

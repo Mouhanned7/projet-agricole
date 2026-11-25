@@ -8,6 +8,7 @@
  *   sauf les filtres rapides Titre et Eau.
  */
 import { compareWith, DEFAULT_SORT_ORDER, type SortCriterion } from "@/lib/domain/ranking";
+import { EQUIPMENT, SOIL_TYPES } from "@/lib/lands/draft";
 import type { CatalogItem } from "./types";
 
 export const SORTS = {
@@ -48,6 +49,8 @@ export interface CatalogFilters {
   potentielMin: number | null;
   statut: ("priority" | "needs_check" | "low")[];
   plantations: "oui" | "non" | null;
+  sol: string[];
+  equip: string[];
   /** Afficher aussi les terrains sans titre ni eau (cas D, décision D4). */
   tous: boolean;
   tri: SortKey;
@@ -71,6 +74,8 @@ export const DEFAULT_FILTERS: CatalogFilters = {
   potentielMin: null,
   statut: [],
   plantations: null,
+  sol: [],
+  equip: [],
   tous: false,
   tri: "recommandes",
 };
@@ -112,6 +117,8 @@ export function parseFilters(p: Params): CatalogFilters {
     potentielMin: num(p.potentielMin),
     statut: list(p.statut, ["priority", "needs_check", "low"]),
     plantations: (pick(p.plantations, ["oui", "non", ""], "") || null) as CatalogFilters["plantations"],
+    sol: list(p.sol, SOIL_TYPES),
+    equip: list(p.equip, EQUIPMENT),
     tous: one(p.tous) === "1",
     tri: pick(p.tri, Object.keys(SORTS) as SortKey[], "recommandes"),
   };
@@ -199,6 +206,9 @@ export function activeTests(f: CatalogFilters): Test[] {
       label: f.plantations === "oui" ? "Avec plantations" : "Sans plantations",
       test: (l) => (f.plantations === "oui" ? l.trees.length > 0 : l.trees.length === 0),
     });
+  if (f.sol.length) t.push({ key: "sol", label: `Sol ${f.sol.join(" ou ")}`, test: (l) => unknownOk(l.extra.soilType, (v) => f.sol.includes(v)) });
+  if (f.equip.length)
+    t.push({ key: "equip", label: f.equip.join(" ou "), test: (l) => !l.extra.equipment?.length || l.extra.equipment.some((e) => f.equip.includes(e)) });
   if (f.statut.length) {
     const labels = { priority: "Prioritaire", needs_check: "Vérification nécessaire", low: "Non prioritaire" };
     t.push({ key: "statut", label: f.statut.map((s) => labels[s]).join(" ou "), test: (l) => (f.statut as string[]).includes(l.rankingStatus) });

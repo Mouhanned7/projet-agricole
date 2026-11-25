@@ -13,7 +13,8 @@
     "check:supabase": "node scripts/check-supabase.mjs",
     "check:smtp": "node scripts/check-smtp.mjs",
     "test:live": "tsx scripts/e2e-live.mts",
-    "emails:generate": "tsx scripts/generate-email-templates.ts"
+    "emails:generate": "tsx scripts/generate-email-templates.ts",
+    "seed:db": "tsx scripts/seed-db.mts"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.9",

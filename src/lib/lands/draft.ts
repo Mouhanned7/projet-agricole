@@ -21,6 +21,9 @@ export const WATER_SOURCES = [
 ] as const;
 
 export const SALE_INCLUDED = ["Arbres", "Puits", "Système d'irrigation", "Bâtiments", "Équipements", "Clôture"] as const;
+export const SOIL_TYPES = ["Argileux", "Sableux", "Limoneux", "Calcaire", "Mixte", "Je ne sais pas"] as const;
+export const EQUIPMENT = ["Irrigation", "Clôture", "Bâtiment", "Bassin", "Pompe", "Électricité", "Panneaux solaires"] as const;
+export const PRACTICES = ["Irrigation goutte-à-goutte", "Couverture du sol", "Compost", "Gestion de la salinité", "Protection des travailleurs", "Limitation des produits chimiques"] as const;
 export const OWNER_CONTRIBUTIONS = ["Mise à disposition du terrain", "Travail", "Suivi local", "Équipements"] as const;
 export const INVESTOR_CONTRIBUTIONS = ["Financement", "Plantation", "Irrigation", "Équipements"] as const;
 
@@ -87,6 +90,16 @@ export const draftSchema = z.object({
       buildings: str(1000),
       crops: str(300),
       description: str(3000),
+      soilType: str(40),
+      soilAnalyses: str(1000),
+      equipment: list(),
+      practices: list(),
+      treesValueTnd: num(0, 1e10),
+      buildingsValueTnd: num(0, 1e10),
+      worksTnd: num(0, 1e10),
+      currentOperation: str(1000),
+      localKnowledge: str(1000),
+      localJobs: num(0, 10000),
     })
     .prefault({}),
 
@@ -206,6 +219,18 @@ export function toRows(d: LandDraft) {
       trees: d.land.trees,
       buildings: d.land.buildings,
       crops: d.land.crops,
+      practices: d.land.practices,
+      soil: {
+        soilType: d.land.soilType,
+        soilAnalyses: d.land.soilAnalyses,
+        equipment: d.land.equipment,
+        treesValueTnd: d.land.treesValueTnd,
+        buildingsValueTnd: d.land.buildingsValueTnd,
+        worksTnd: d.land.worksTnd,
+        currentOperation: d.land.currentOperation,
+        localKnowledge: d.land.localKnowledge,
+        localJobs: d.land.localJobs,
+      },
     },
     title: {
       answer: d.title.answer,
@@ -327,6 +352,8 @@ export function fromRows(land: Row, title: Row, water: Row, offer: Row): LandDra
       buildings: l.buildings,
       crops: l.crops,
       description: l.description,
+      practices: (l.practices as string[]) ?? [],
+      ...Object.fromEntries(Object.entries((l.soil as Record<string, unknown>) ?? {}).filter(([, v]) => v != null)),
     },
     offer: {
       priceTnd: n(o.price_tnd),

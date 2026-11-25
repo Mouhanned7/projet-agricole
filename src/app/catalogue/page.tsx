@@ -6,6 +6,7 @@ import { LandCard } from "@/components/land-card";
 import { buttonVariants } from "@/components/ui/button";
 import { applyFilters, filtersToSearch, parseFilters, withoutFilter } from "@/lib/catalog/filters";
 import { getCatalogItems, getCatalogSettings } from "@/lib/catalog/source";
+import { saveSearch } from "@/lib/investor/searches";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Terrains disponibles" };
@@ -41,9 +42,13 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
             )}
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <Link href="/projet" className={buttonVariants({ variant: "outline", size: "sm" })}>Mon projet</Link>
+        <Link href="/comparer" className={buttonVariants({ variant: "outline", size: "sm" })}>Comparer</Link>
         <Link href={`/carte${filtersToSearch(filters) ? `?${filtersToSearch(filters)}` : ""}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
           <MapIcon className="size-4" aria-hidden /> Voir sur la carte
         </Link>
+        </div>
       </div>
 
       <div className="mt-6">
@@ -65,6 +70,11 @@ export default async function CatalogPage({ searchParams }: { searchParams: Prom
           <Link href="/catalogue" className="text-sm font-medium text-forest-800 underline underline-offset-2">
             Tout réinitialiser
           </Link>
+          <form action={saveSearch}>
+            <input type="hidden" name="query" value={filtersToSearch(filters)} />
+            <input type="hidden" name="label" value={result.active.map((a) => a.label).join(", ")} />
+            <button className="text-sm font-medium text-forest-800 underline underline-offset-2">Enregistrer cette recherche</button>
+          </form>
         </div>
       )}
 

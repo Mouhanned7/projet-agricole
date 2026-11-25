@@ -2,6 +2,7 @@
 
 import { Crosshair, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { PointMap } from "@/components/catalog/point-map";
 import { GOVERNORATES, delegationId } from "@/lib/data/tunisia";
 import { NumberInput, Select } from "../controls";
 import type { StepProps } from "../types";
@@ -69,6 +70,8 @@ export function StepLocation({ draft, patch, showErrors }: StepProps) {
         </button>
         {geo === "error" && <p className="mt-2 text-sm text-danger-600">Position indisponible. Autorisez la localisation ou saisissez les coordonnées.</p>}
         {geo === "outside" && <p className="mt-2 text-sm text-danger-600">Votre position semble hors de Tunisie. Saisissez les coordonnées du terrain.</p>}
+        <p className="mb-2 mt-4 text-sm text-ink-600">Ou touchez la carte à l&apos;emplacement du terrain.</p>
+        <PointMap lat={loc.lat} lng={loc.lng} onPick={(lat, lng) => patch("location", { lat, lng })} />
         <div className="mt-4 grid grid-cols-2 gap-3" key={`${loc.lat}-${loc.lng}`}>
           <NumberInput label="Latitude" value={loc.lat} onChange={(v) => patch("location", { lat: v })} hint="Ex. 36.58" />
           <NumberInput label="Longitude" value={loc.lng} onChange={(v) => patch("location", { lng: v })} hint="Ex. 10.86" />

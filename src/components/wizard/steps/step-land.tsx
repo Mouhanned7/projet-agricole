@@ -1,7 +1,8 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { Choice, NumberInput, Question, TextInput } from "../controls";
+import { EQUIPMENT, PRACTICES, SOIL_TYPES } from "@/lib/lands/draft";
+import { Choice, MultiChoice, NumberInput, Question, Select, TextInput } from "../controls";
 import type { StepProps } from "../types";
 
 const COMMON_SPECIES = ["Olivier", "Amandier", "Palmier dattier", "Figuier", "Grenadier", "Agrumes", "Pistachier"];
@@ -74,6 +75,23 @@ export function StepLand({ draft, patch }: StepProps) {
         onChange={(v) => patch("land", { crops: v })}
         placeholder="Ex. céréales, maraîchage"
       />
+      <Select label="Type de sol" value={l.soilType} onChange={(v) => patch("land", { soilType: v })} options={SOIL_TYPES.map((v) => ({ value: v, label: v }))} />
+      <TextInput label="Analyses de sol déjà réalisées" multiline value={l.soilAnalyses} onChange={(v) => patch("land", { soilAnalyses: v })} />
+      <Question label="Équipements existants">
+        <MultiChoice value={l.equipment} onChange={(v) => patch("land", { equipment: v })} options={EQUIPMENT.map((v) => ({ value: v, label: v }))} />
+      </Question>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <NumberInput label="Valeur des arbres" unit="TND" value={l.treesValueTnd} onChange={(v) => patch("land", { treesValueTnd: v })} />
+        <NumberInput label="Valeur des constructions" unit="TND" value={l.buildingsValueTnd} onChange={(v) => patch("land", { buildingsValueTnd: v })} />
+        <NumberInput label="Travaux nécessaires" unit="TND" value={l.worksTnd} onChange={(v) => patch("land", { worksTnd: v })} />
+      </div>
+      <TextInput label="Exploitation agricole actuelle" multiline value={l.currentOperation} onChange={(v) => patch("land", { currentOperation: v })} />
+      <Question label="Pratiques durables déclarées">
+        <MultiChoice value={l.practices} onChange={(v) => patch("land", { practices: v })} options={PRACTICES.map((v) => ({ value: v, label: v }))} />
+      </Question>
+      <TextInput label="Variétés et savoir-faire locaux" multiline value={l.localKnowledge} onChange={(v) => patch("land", { localKnowledge: v })} />
+      <NumberInput label="Emplois locaux prévus" value={l.localJobs} onChange={(v) => patch("land", { localJobs: v })} />
+
       <TextInput
         label="Description libre"
         multiline

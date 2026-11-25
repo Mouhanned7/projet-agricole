@@ -7,6 +7,7 @@ import { normalizeSortOrder } from "@/lib/domain/ranking";
 import { sendEmail } from "@/lib/email";
 import { WORKFLOW_LABEL } from "@/lib/lands/labels";
 import { runDiagnostic } from "@/lib/geoai/service";
+import { notifySavedSearches } from "@/lib/investor/alerts";
 import { recomputeRanking } from "@/lib/lands/ranking-sync";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
@@ -73,7 +74,10 @@ export async function setLandStatus(landId: string, status: string, note?: strin
   const { error } = await ctx.supabase.rpc("admin_set_status", { p_land: landId, p_status: status, p_note: parsed.data.note || null });
   if (error) return { ok: false, error: "Changement de statut impossible." };
 
-  if (status === "published") await recomputeRanking(ctx.supabase, landId);
+  if (status === "published") {
+    await recomputeRanking(ctx.supabase, landId);
+    await notifySavedSearches(landId).catch((e) => console.error("recherches", e));
+  }
   const email = await ownerEmail(land.owner_id);
   if (email) {
     await sendEmail({

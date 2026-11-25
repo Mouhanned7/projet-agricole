@@ -94,6 +94,9 @@ export default async function AdminLandPage({ params }: { params: Promise<{ id: 
           </div>
           <p className="mt-2 text-sm text-ink-600">{land.ranking_reason}</p>
         </div>
+        <Link href={`/espace-porteur/terrains/${id}`} className="text-sm font-medium text-forest-800 underline underline-offset-2">
+          Corriger le dossier
+        </Link>
         {isPublic && (
           <Link href={`/terrains/${id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-forest-800 underline underline-offset-2">
             Fiche publique <ExternalLink className="size-4" aria-hidden />

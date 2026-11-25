@@ -50,7 +50,8 @@ export async function saveDraft(input: { landId?: string | null; step: number; d
   const supabase = await createClient();
 
   // Le compte devient porteur s'il ne l'était pas encore (INS-09).
-  if (!session.profile!.roles.includes("owner")) {
+  const isAdmin = session.profile!.roles.includes("admin");
+  if (!isAdmin && !session.profile!.roles.includes("owner")) {
     await supabase.from("profiles").update({ roles: [...session.profile!.roles, "owner"] }).eq("id", session.userId);
   }
 
@@ -59,7 +60,7 @@ export async function saveDraft(input: { landId?: string | null; step: number; d
   if (landId) {
     const { data: existing } = await supabase.from("lands").select("status, ref").eq("id", landId).maybeSingle();
     if (!existing) return { ok: false, error: "Ce terrain est introuvable." };
-    if (!EDITABLE.includes(existing.status))
+    if (!isAdmin && !EDITABLE.includes(existing.status))
       return { ok: false, error: "Ce dossier a été soumis : contactez l'équipe VerdOlive pour le modifier." };
     ref = existing.ref;
     const { error } = await supabase.from("lands").update({ ...rows.land, wizard_step: step }).eq("id", landId);
