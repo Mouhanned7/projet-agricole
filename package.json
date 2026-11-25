@@ -12,7 +12,8 @@
     "check:build": "NEXT_DIST_DIR=.next-check next build --turbopack",
     "check:supabase": "node scripts/check-supabase.mjs",
     "check:smtp": "node scripts/check-smtp.mjs",
-    "test:live": "tsx scripts/e2e-live.mts"
+    "test:live": "tsx scripts/e2e-live.mts",
+    "emails:generate": "tsx scripts/generate-email-templates.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.9",

@@ -18,36 +18,28 @@ Dans `.env.local` (voir `.env.example`) :
 
 ## 3. Authentication > URL Configuration
 
-- **Site URL** : la même valeur que `NEXT_PUBLIC_SITE_URL`.
+- **Site URL** : l'adresse du site **en ligne** (`https://verdolive-kappa.vercel.app`). C'est elle qui est utilisée dans les liens des e-mails.
 - **Redirect URLs** : ajouter `https://<votre-domaine>/auth/**` et `http://localhost:3000/auth/**`.
 
-## 4. Authentication > Email Templates
+## 4. Authentication > Emails > Templates
 
-Les liens pointent vers `/auth/confirm` avec un `token_hash`, ce qui fonctionne même si l'e-mail est ouvert sur un autre appareil.
+Les modèles professionnels sont dans `supabase/email-templates/` (générés par `npm run emails:generate`).
+Pour chacun : coller le **sujet**, puis tout le contenu du fichier dans **Message body** (onglet *Source*), et **Save**.
 
-**Magic Link** (sert à la fois à confirmer l'adresse et à se connecter sans mot de passe) :
+| Modèle Supabase | Fichier | Sujet |
+|---|---|---|
+| **Magic Link** (confirmation et connexion) | `magic-link.html` | `Confirmez votre adresse et connectez-vous à VerdOlive` |
+| **Reset Password** | `reset-password.html` | `Réinitialisez votre mot de passe VerdOlive` |
+| **Confirm signup** | `confirm-signup.html` | `Bienvenue sur VerdOlive : confirmez votre adresse` |
 
-- Sujet : `Votre lien VerdOlive`
-- Corps :
+Copier un fichier dans le presse-papiers (macOS) :
 
-```html
-<h2>Bonjour,</h2>
-<p>Cliquez sur ce lien pour confirmer votre adresse et vous connecter à VerdOlive :</p>
-<p><a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=magiclink">Confirmer et me connecter</a></p>
-<p>Ce lien est valable une heure et ne sert qu'une fois. Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>
+```bash
+pbcopy < supabase/email-templates/magic-link.html
 ```
 
-**Reset Password** :
-
-- Sujet : `Réinitialisez votre mot de passe VerdOlive`
-- Corps :
-
-```html
-<h2>Bonjour,</h2>
-<p>Pour choisir un nouveau mot de passe, cliquez sur ce lien :</p>
-<p><a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery">Choisir un nouveau mot de passe</a></p>
-<p>Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.</p>
-```
+Les liens utilisent `{{ .SiteURL }}` : la **Site URL** (section 3) doit être l'adresse du site en ligne,
+`https://verdolive-kappa.vercel.app`, sinon les e-mails ouvrent `localhost`.
 
 ## 5. Authentication > Providers > Google (facultatif, INS-04)
 

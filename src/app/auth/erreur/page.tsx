@@ -5,7 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 export const metadata: Metadata = { title: "Lien invalide" };
 
 const MESSAGES: Record<string, { title: string; text: string }> = {
-  expire: { title: "Ce lien a expiré", text: "Les liens reçus par e-mail sont valables une heure et ne servent qu'une fois. Demandez-en un nouveau." },
+  expire: { title: "Ce lien a expiré", text: "Les liens reçus par e-mail sont valables une heure et ne servent qu'une fois, et seul le plus récent fonctionne. Connectez-vous avec l'onglet « Lien par e-mail » pour en recevoir un nouveau." },
   lien: { title: "Ce lien n'est pas valide", text: "Il a peut-être déjà été utilisé, ou il a été copié de façon incomplète." },
   google: { title: "Connexion Google impossible", text: "La connexion avec Google a été annulée ou a échoué. Réessayez, ou utilisez votre adresse e-mail." },
   config: { title: "Connexion indisponible", text: "Le service d'authentification n'est pas encore configuré." },

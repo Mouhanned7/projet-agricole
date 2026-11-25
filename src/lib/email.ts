@@ -1,5 +1,6 @@
 import "server-only";
 import nodemailer, { type Transporter } from "nodemailer";
+import { emailLayout } from "./email-layout";
 
 /**
  * Envoi d'e-mails transactionnels (notifications, §8) par SMTP.
@@ -26,17 +27,6 @@ function getTransporter(): Transporter | null {
   return transporter;
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-
-export function renderEmail(text: string, url?: string) {
-  return `<div style="font-family:system-ui,-apple-system,sans-serif;color:#1e241a;max-width:560px;margin:0 auto;padding:24px">
-    <p style="font-size:22px;font-weight:600;color:#24402a;margin:0 0 16px">VerdOlive</p>
-    <p style="white-space:pre-line;line-height:1.6;margin:0 0 20px">${esc(text)}</p>
-    ${url ? `<p style="margin:0 0 24px"><a href="${esc(url)}" style="display:inline-block;background:#24402a;color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600">Ouvrir VerdOlive</a></p>` : ""}
-    <p style="font-size:12px;color:#858c7d;margin:0">Vous recevez ce message car vous avez un compte VerdOlive.</p>
-  </div>`;
-}
-
 export async function sendEmail(msg: { to: string; subject: string; text: string; link?: string }): Promise<boolean> {
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
   const url = msg.link ? `${site}${msg.link}` : site || undefined;
@@ -52,7 +42,13 @@ export async function sendEmail(msg: { to: string; subject: string; text: string
       to: msg.to,
       subject: msg.subject,
       text: url ? `${msg.text}\n\n${url}` : msg.text,
-      html: renderEmail(msg.text, url),
+      html: emailLayout({
+        preheader: msg.text.split("\n").find((l) => l.trim() && !l.startsWith("Bonjour")) ?? msg.subject,
+        title: msg.subject,
+        paragraphs: msg.text.split("\n\n"),
+        button: url ? { label: "Ouvrir VerdOlive", url } : undefined,
+        siteUrl: site || undefined,
+      }),
     });
     return true;
   } catch (e) {
