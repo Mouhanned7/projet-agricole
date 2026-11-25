@@ -70,14 +70,18 @@ export async function signUp(_: ActionState, formData: FormData): Promise<Action
     password,
     options: { data: { full_name: fullName, role } },
   });
-  if (error) return { error: authErrorMessage(error), values };
+  if (error) {
+    console.error("signUp", error.status, error.code, error.message);
+    return { error: authErrorMessage(error), values };
+  }
   if (!data.session) {
     // « Confirm email » est encore activé côté Supabase (voir docs/SUPABASE_SETUP.md).
     return { success: "Compte créé. Ouvrez le lien reçu par e-mail pour vous connecter.", values };
   }
 
   const destination = homeForRoles([role]);
-  await sendEmailLink(email, destination); // vérification non bloquante (INS-05)
+  const sent = await sendEmailLink(email, destination); // vérification non bloquante (INS-05)
+  if (sent.error) console.error("sendEmailLink", sent.error.status, sent.error.message);
   revalidatePath("/", "layout");
   redirect(role === "owner" ? "/espace-porteur?bienvenue=1" : "/catalogue?bienvenue=1");
 }

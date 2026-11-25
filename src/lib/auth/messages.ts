@@ -15,6 +15,8 @@ export function authErrorMessage(error: { message?: string; code?: string; statu
     return "Ce lien a expiré ou a déjà été utilisé. Demandez-en un nouveau.";
   if (code === "email_address_invalid") return "Cette adresse e-mail n'est pas acceptée.";
   if (code === "signup_disabled") return "Les inscriptions sont momentanément fermées.";
+  if (msg.includes("sending") && msg.includes("email"))
+    return "L'e-mail de confirmation n'a pas pu être envoyé. Le service d'e-mail de VerdOlive est en cours de réglage : réessayez dans quelques minutes.";
   return "Une erreur est survenue. Réessayez dans un instant.";
 }
 
