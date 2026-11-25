@@ -28,7 +28,7 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex items-center gap-1 rounded-full bg-white p-1 ring-1 ring-forest-900/10">
+    <div role="radiogroup" aria-label={label} className="flex max-w-full items-center gap-1 overflow-x-auto rounded-full bg-white p-1 ring-1 ring-forest-900/10">
       <span className="hidden pl-2 pr-1 text-forest-800 sm:block" aria-hidden>
         {icon}
       </span>
