@@ -120,9 +120,17 @@ export function lookup(input: string, depth = 0): string | null {
   return null;
 }
 
+/** Les mêmes textes reviennent à chaque changement de page : résultats mémorisés. */
+const cache = new Map<string, string | null>();
+
 /** Traduit en conservant les espaces autour du texte. */
 export function translate(raw: string): string {
-  const out = lookup(raw);
+  let out = cache.get(raw);
+  if (out === undefined) {
+    out = lookup(raw);
+    if (cache.size > 5000) cache.clear();
+    cache.set(raw, out);
+  }
   if (out == null) return raw;
   const lead = raw.match(/^\s*/)![0];
   const trail = raw.match(/\s*$/)![0];

@@ -24,6 +24,9 @@ export async function middleware(request: NextRequest) {
   };
 
   if (!url || !key) return isProtected ? toLogin() : NextResponse.next();
+  // Visiteur sans session : rien à rafraîchir, on évite un appel réseau à chaque page.
+  const hasSession = request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+  if (!hasSession) return isProtected ? toLogin() : NextResponse.next();
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {

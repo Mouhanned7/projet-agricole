@@ -99,3 +99,23 @@ html[data-i18n="pending"] body {
     visibility: visible;
   }
 }
+
+/* Réaction immédiate au toucher et au clic */
+button,
+a[href],
+summary,
+label:has(input) {
+  touch-action: manipulation;
+}
+:is(button, a[href]):active:not(:disabled) {
+  transform: translateY(1px);
+  opacity: 0.85;
+}
+@keyframes progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}

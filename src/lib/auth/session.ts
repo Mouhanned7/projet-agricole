@@ -1,5 +1,5 @@
 import "server-only";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { createClient, supabaseConfigured } from "@/lib/supabase/server";
 
@@ -24,6 +24,9 @@ export interface Session {
 /** Utilisateur connecté et son profil, mis en cache pour la durée de la requête. */
 export const getSession = cache(async (): Promise<Session | null> => {
   if (!supabaseConfigured) return null;
+  // Sans cookie de session, inutile d'interroger le service d'authentification.
+  const jar = await cookies();
+  if (!jar.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"))) return null;
   const supabase = await createClient();
   const {
     data: { user },
