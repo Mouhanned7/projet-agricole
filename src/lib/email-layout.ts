@@ -11,6 +11,8 @@ export interface EmailContent {
   button?: { label: string; url: string };
   /** Encadré d'information sous le bouton. */
   note?: string;
+  /** Résumé en arabe, affiché de droite à gauche. */
+  arabic?: string;
   siteUrl?: string;
 }
 
@@ -58,7 +60,7 @@ export function emailLayout(c: EmailContent): string {
       </td></tr>
       <tr><td style="background:#ffffff;border-radius:20px;border-top:4px solid #c9a24b;padding:28px 22px">
         <h1 style="margin:0 0 18px;font-family:${SERIF};font-size:26px;line-height:1.3;color:#1c3020">${e(c.title)}</h1>
-        ${paragraphs}${button}${note}${fallback}
+        ${paragraphs}${button}${note}${c.arabic ? `<p dir="rtl" lang="ar" style="margin:0 0 20px;text-align:right;font-size:15px;line-height:1.8;color:#4e5747">${e(c.arabic)}</p>` : ""}${fallback}
       </td></tr>
       <tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:#858c7d;text-align:center">
         VerdOlive, la mise en relation entre investisseurs et porteurs de terrain agricole en Tunisie.${

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
-import { normalizeSortOrder } from "@/lib/domain/ranking";
+import { normalizeSortOrder, normalizeWeights } from "@/lib/domain/ranking";
 import { sendEmail } from "@/lib/email";
 import { WORKFLOW_LABEL } from "@/lib/lands/labels";
 import { runDiagnostic } from "@/lib/geoai/service";
@@ -194,6 +194,18 @@ export async function saveSettings(input: { showLowByDefault: boolean; sortOrder
   await audit("save_settings", "settings", "catalog", { ...input });
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/** CLA-04 : pondérations des scores, puis recalcul de tous les terrains soumis. */
+export async function saveWeights(formData: FormData) {
+  const ctx = await requireAdmin();
+  if (!ctx) return;
+  const value = normalizeWeights(Object.fromEntries([...formData].map(([k, v]) => [k, Number(v)])));
+  await ctx.supabase.from("settings").upsert({ key: "ranking.weights", value, updated_by: ctx.session.userId });
+  const { data } = await ctx.supabase.from("lands").select("id").neq("status", "draft").limit(500);
+  for (const l of data ?? []) await recomputeRanking(ctx.supabase, l.id);
+  await audit("save_weights", "settings", "ranking.weights");
+  revalidatePath("/", "layout");
 }
 
 /** Commission ou frais affichés sur la fiche (RES-06). */

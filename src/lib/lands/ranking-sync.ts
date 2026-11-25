@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { computeRanking } from "@/lib/domain/ranking";
+import { computeRanking, normalizeWeights } from "@/lib/domain/ranking";
 import type { TitleProof, WaterProof } from "@/lib/domain/types";
 import { createServiceClient } from "@/lib/supabase/server";
 import { draftSchema, toRankingInput, type LandDraftInput } from "./draft";
@@ -23,7 +23,8 @@ export async function recomputeRanking(supabase: SupabaseClient, landId: string,
   const input = toRankingInput(draft, media);
   if (current?.title_proof === "verified") input.title.proof = "verified" as TitleProof;
   if (current?.water_proof === "documented" || current?.water_proof === "analyzed") input.water.proof = current.water_proof as WaterProof;
-  const ranking = computeRanking(input);
+  const { data: setting } = await supabase.from("settings").select("value").eq("key", "ranking.weights").maybeSingle();
+  const ranking = computeRanking(input, normalizeWeights(setting?.value));
 
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     await createServiceClient()

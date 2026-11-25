@@ -49,6 +49,7 @@ export interface CatalogItem {
   jointOwnersAgree: boolean | null;
   altDocument: string | null;
   titleVerifiedAt: string | null;
+  titleReview: boolean;
   titleNotes: string | null;
   waterProof: WaterProof;
   waterAnswer: WaterAnswer | null;

@@ -13,6 +13,20 @@ import type {
   WaterProof,
 } from "./types";
 
+/** Points des scores juridique et hydrique, réglables par l'administration (CLA-04). */
+export const DEFAULT_WEIGHTS = {
+  titre: 40, numero: 10, conservation: 5, proprietaires: 5, document: 15, propriete: 5, titreVerifie: 20,
+  eau: 40, touteAnnee: 15, saisonniere: 7, debit: 15, profondeur: 5, salinite: 5, analyse: 5, documentee: 10, analysee: 15,
+};
+export type Weights = typeof DEFAULT_WEIGHTS;
+
+export function normalizeWeights(v: unknown): Weights {
+  const o = (v ?? {}) as Record<string, unknown>;
+  return Object.fromEntries(
+    Object.entries(DEFAULT_WEIGHTS).map(([k, d]) => [k, typeof o[k] === "number" && (o[k] as number) >= 0 && (o[k] as number) <= 100 ? o[k] : d]),
+  ) as Weights;
+}
+
 const TITLE_NUMBER_RE = /^[\p{L}\p{N}\s/\-.]+$/u;
 
 /** TER-03 : contrôle léger, jamais de format rigide (§3.2 C). */
@@ -104,17 +118,17 @@ function blockingIssues(land: LandForRanking): { titleWater: string[]; other: st
   return { titleWater, other };
 }
 
-function legalScore(land: LandForRanking, proof: TitleProof): number {
+function legalScore(land: LandForRanking, proof: TitleProof, w: Weights): number {
   const t = land.title;
   let s = 0;
   if (t.answer === "yes") {
-    s += 40;
-    if (validateTitleNumber(t.number).ok) s += 10;
-    if (t.registry) s += 5;
-    if (t.ownerNames) s += 5;
-    if (t.hasUpload) s += 15;
-    if (t.ownership === "individual" || (t.ownership === "joint" && t.jointOwnersAgree)) s += 5;
-    if (proof === "verified") s += 20;
+    s += w.titre;
+    if (validateTitleNumber(t.number).ok) s += w.numero;
+    if (t.registry) s += w.conservation;
+    if (t.ownerNames) s += w.proprietaires;
+    if (t.hasUpload) s += w.document;
+    if (t.ownership === "individual" || (t.ownership === "joint" && t.jointOwnersAgree)) s += w.propriete;
+    if (proof === "verified") s += w.titreVerifie;
   } else if (t.answer === "no") {
     if (t.altDocument && t.altDocument !== "none") s += 15;
     if (t.hasUpload) s += 10;
@@ -123,18 +137,18 @@ function legalScore(land: LandForRanking, proof: TitleProof): number {
   return Math.min(100, s);
 }
 
-function waterScore(land: LandForRanking, proof: WaterProof): number {
+function waterScore(land: LandForRanking, proof: WaterProof, p: Weights): number {
   const w = land.water;
   if (w.answer !== "yes") return w.nearbySource === "yes" ? 10 : 0;
-  let s = 40;
-  if (w.availability === "year_round") s += 15;
-  else if (w.availability === "seasonal") s += 7;
-  if (w.flow) s += 15;
-  if (w.depthM != null) s += 5;
-  if (w.salinityGL) s += 5;
-  if (w.hasAnalysisUpload) s += 5;
-  if (proof === "documented") s += 10;
-  if (proof === "analyzed") s += 15;
+  let s = p.eau;
+  if (w.availability === "year_round") s += p.touteAnnee;
+  else if (w.availability === "seasonal") s += p.saisonniere;
+  if (w.flow) s += p.debit;
+  if (w.depthM != null) s += p.profondeur;
+  if (w.salinityGL) s += p.salinite;
+  if (w.hasAnalysisUpload) s += p.analyse;
+  if (proof === "documented") s += p.documentee;
+  if (proof === "analyzed") s += p.analysee;
   return Math.min(100, s);
 }
 
@@ -179,14 +193,14 @@ const WATER_REASON: Record<WaterProof, string> = {
   none: "",
 };
 
-export function computeRanking(land: LandForRanking): RankingResult {
+export function computeRanking(land: LandForRanking, weights: Weights = DEFAULT_WEIGHTS): RankingResult {
   const titleProof = effectiveTitleProof(land);
   const waterProof = effectiveWaterProof(land);
   const issues = blockingIssues(land);
   const comp = completeness(land);
   const scores = {
-    legal: legalScore(land, titleProof),
-    water: waterScore(land, waterProof),
+    legal: legalScore(land, titleProof, weights),
+    water: waterScore(land, waterProof, weights),
     completeness: comp.score,
     agri: land.agriScore ?? null,
   };

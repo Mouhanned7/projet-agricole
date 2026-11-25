@@ -48,6 +48,7 @@ export async function sendEmail(msg: { to: string; subject: string; text: string
         paragraphs: msg.text.split("\n\n"),
         button: url ? { label: "Ouvrir VerdOlive", url } : undefined,
         siteUrl: site || undefined,
+        arabic: "لديك إشعار جديد من VerdOlive. اضغط على الزر للاطلاع عليه.",
       }),
     });
     return true;

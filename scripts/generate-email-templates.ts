@@ -20,6 +20,7 @@ const templates: { file: string; supabaseName: string; subject: string; content:
     content: {
       preheader: "Un clic pour confirmer votre adresse et accéder à votre espace.",
       title: "Confirmez votre adresse e-mail",
+      arabic: "أكّد بريدك الإلكتروني: اضغط على الزر لتأكيد عنوانك والدخول إلى حسابك. الرابط صالح لمدة ساعة ويُستعمل مرة واحدة.",
       paragraphs: [
         "Bonjour,",
         "Cliquez sur le bouton ci-dessous pour confirmer votre adresse et vous connecter à votre espace VerdOlive.",
@@ -36,6 +37,7 @@ const templates: { file: string; supabaseName: string; subject: string; content:
     content: {
       preheader: "Choisissez un nouveau mot de passe pour votre compte VerdOlive.",
       title: "Choisissez un nouveau mot de passe",
+      arabic: "طلبت إعادة تعيين كلمة المرور: اضغط على الزر لاختيار كلمة جديدة. الرابط صالح لمدة ساعة.",
       paragraphs: ["Bonjour,", "Vous avez demandé à réinitialiser le mot de passe de votre compte VerdOlive."],
       button: { label: "Choisir un nouveau mot de passe", url: link("recovery") },
       note: `Ce lien est valable une heure et ne sert qu'une fois. ${IGNORE}`,
@@ -49,6 +51,7 @@ const templates: { file: string; supabaseName: string; subject: string; content:
     content: {
       preheader: "Dernière étape pour activer votre compte VerdOlive.",
       title: "Bienvenue sur VerdOlive",
+      arabic: "مرحبًا بك في VerdOlive: أكّد بريدك الإلكتروني بالضغط على الزر.",
       paragraphs: [
         "Bonjour,",
         "Merci pour votre inscription. Confirmez votre adresse e-mail pour contacter un propriétaire ou soumettre votre terrain.",

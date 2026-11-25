@@ -50,6 +50,7 @@ export function rowToItem(r: Row, photoUrls: string[] = []): CatalogItem {
     jointOwnersAgree: (r.joint_owners_agree ?? null) as boolean | null,
     altDocument: s(r.alt_document),
     titleVerifiedAt: s(r.title_verified_at),
+    titleReview: Boolean(r.title_review),
     titleNotes: s(r.title_notes),
     waterProof: r.water_proof as CatalogItem["waterProof"],
     waterAnswer: (r.water_answer ?? null) as CatalogItem["waterAnswer"],

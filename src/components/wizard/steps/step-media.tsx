@@ -2,6 +2,7 @@
 
 import { Camera, FileUp, Loader2, Lock, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { compressImage } from "@/lib/compress-image";
 import { refreshRanking } from "@/lib/lands/actions";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -79,7 +80,8 @@ export function StepMedia({ draft, landId, mode, media, setMedia, ensureSaved }:
     setError(null);
     if (!files?.length) return;
     const allowed = target === "photo" ? PHOTO_TYPES : DOC_TYPES;
-    const list = Array.from(files).slice(0, target === "photo" ? 12 : 1);
+    const picked = Array.from(files).slice(0, target === "photo" ? 12 : 1);
+    const list = target === "photo" ? await Promise.all(picked.map((f) => compressImage(f))) : picked;
     for (const f of list) {
       if (f.size > MAX_BYTES) return setError(`« ${f.name} » dépasse 10 Mo.`);
       if (f.type && !allowed.includes(f.type)) return setError(`« ${f.name} » : format non accepté.`);

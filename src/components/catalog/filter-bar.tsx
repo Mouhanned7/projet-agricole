@@ -269,6 +269,7 @@ export function FilterBar({ filters, total, basePath }: { filters: CatalogFilter
                     [
                       ["declared", "Titre déclaré"],
                       ["document", "Document fourni"],
+                      ["review", "Vérification en cours"],
                       ["verified", "Vérifié"],
                     ] as const
                   ).map(([v, l]) => (

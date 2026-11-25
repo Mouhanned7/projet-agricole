@@ -134,6 +134,15 @@ export async function submitLand(landId: string): Promise<SaveResult> {
   return { ok: true, landId, ranking: computed.ranking };
 }
 
+/** Modifier un terrain publié (§13.2) : retrait, correction, nouvelle validation. */
+export async function reopenLand(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const auth = await requireOwner();
+  if ("error" in auth) return;
+  await (await createClient()).rpc("reopen_land", { p_land: id });
+  revalidatePath("/", "layout");
+}
+
 export async function deleteDraft(landId: string): Promise<SaveResult> {
   const auth = await requireOwner();
   if ("error" in auth) return { ok: false, error: auth.error };

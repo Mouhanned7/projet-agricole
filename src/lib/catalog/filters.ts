@@ -44,7 +44,7 @@ export interface CatalogFilters {
   source: string[];
   dispo: ("year_round" | "seasonal")[];
   debitMin: number | null;
-  foncier: ("declared" | "document" | "verified")[];
+  foncier: ("declared" | "document" | "review" | "verified")[];
   culture: CropKey[];
   potentielMin: number | null;
   statut: ("priority" | "needs_check" | "low")[];
@@ -112,7 +112,7 @@ export function parseFilters(p: Params): CatalogFilters {
     source: list(p.source, ["well", "borehole", "network", "cistern", "other"]),
     dispo: list(p.dispo, ["year_round", "seasonal"]),
     debitMin: num(p.debitMin),
-    foncier: list(p.foncier, ["declared", "document", "verified"]),
+    foncier: list(p.foncier, ["declared", "document", "review", "verified"]),
     culture: list(p.culture, Object.keys(CROPS) as CropKey[]),
     potentielMin: num(p.potentielMin),
     statut: list(p.statut, ["priority", "needs_check", "low"]),
@@ -186,8 +186,8 @@ export function activeTests(f: CatalogFilters): Test[] {
   if (f.debitMin != null)
     t.push({ key: "debitMin", label: `Débit ≥ ${f.debitMin} l/s`, test: (l) => l.waterAnswer !== "no" && unknownOk(l.flowLs, (d) => d >= f.debitMin!) });
   if (f.foncier.length) {
-    const labels = { declared: "Titre déclaré", document: "Document fourni", verified: "Titre vérifié" };
-    t.push({ key: "foncier", label: f.foncier.map((x) => labels[x]).join(" ou "), test: (l) => (f.foncier as string[]).includes(l.titleProof) });
+    const labels = { declared: "Titre déclaré", document: "Document fourni", review: "Vérification en cours", verified: "Titre vérifié" };
+    t.push({ key: "foncier", label: f.foncier.map((x) => labels[x]).join(" ou "), test: (l) => (f.foncier as string[]).includes(l.titleProof) || (f.foncier.includes("review") && l.titleReview) });
   }
   if (f.culture.length)
     t.push({
