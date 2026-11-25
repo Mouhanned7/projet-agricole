@@ -17,6 +17,11 @@ describe("traduction arabe", () => {
     expect(lookup("Korba, Nabeul")).toBe("قربة، نابل");
     expect(lookup("VO-DEMO3 · Partenariat")).toBe("VO-DEMO3 · شراكة");
   });
+  it("les grands nombres restent dans le bon ordre en arabe", () => {
+    expect(translate("740 000 TND")).toBe("\u2066740 000\u2069 د.ت");
+    expect(translate("740 000")).toBe("\u2066740 000\u2069");
+    expect(translate(translate("740 000 TND"))).toBe("\u2066740 000\u2069 د.ت");
+  });
   it("les saisies des utilisateurs restent inchangées", () => {
     expect(translate("Oliveraie de Si Ahmed")).toBe("Oliveraie de Si Ahmed");
     expect(translate("Visite possible, appelez avant")).toBe("Visite possible, appelez avant");

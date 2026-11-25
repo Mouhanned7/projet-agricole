@@ -120,6 +120,13 @@ export function lookup(input: string, depth = 0): string | null {
   return null;
 }
 
+/**
+ * En arabe (droite à gauche), « 740 000 » s'afficherait « 000 740 » : les nombres
+ * à milliers séparés par des espaces sont isolés en gauche à droite.
+ */
+const GROUPED = /(?<![\u2066\d])\d{1,3}(?:[ \u00a0\u202f]\d{3})+(?:[.,]\d+)?/g;
+export const isolateNumbers = (s: string) => s.replace(GROUPED, "\u2066$&\u2069");
+
 /** Les mêmes textes reviennent à chaque changement de page : résultats mémorisés. */
 const cache = new Map<string, string | null>();
 
@@ -131,8 +138,8 @@ export function translate(raw: string): string {
     if (cache.size > 5000) cache.clear();
     cache.set(raw, out);
   }
-  if (out == null) return raw;
+  if (out == null) return isolateNumbers(raw);
   const lead = raw.match(/^\s*/)![0];
   const trail = raw.match(/\s*$/)![0];
-  return lead + out + trail;
+  return isolateNumbers(lead + out + trail);
 }
