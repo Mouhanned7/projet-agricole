@@ -1,5 +1,6 @@
-import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Link, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { CatalogItem } from "@/lib/catalog/types";
+import { WATER_SOURCES } from "@/lib/lands/draft";
 import { STATUS_LABEL } from "@/lib/domain/ranking";
 import { LEVEL_LABEL } from "@/lib/geoai/crops";
 import type { StoredDiagnostic } from "@/lib/geoai/service";
@@ -10,9 +11,9 @@ export const REPORT_VERSION = "1.0";
 const C = { forest: "#24402a", ink: "#1e241a", muted: "#4e5747", light: "#858c7d", cream: "#f6f1e5", gold: "#b08a3a" };
 const s = StyleSheet.create({
   page: { padding: 40, fontSize: 10, color: C.ink, fontFamily: "Helvetica", lineHeight: 1.4 },
-  brand: { fontSize: 18, color: C.forest, fontFamily: "Helvetica-Bold" },
-  title: { fontSize: 20, fontFamily: "Helvetica-Bold", marginTop: 14 },
-  sub: { color: C.muted, marginTop: 2 },
+  brand: { fontSize: 18, lineHeight: 1.3, color: C.forest, fontFamily: "Helvetica-Bold" },
+  title: { fontSize: 20, lineHeight: 1.3, fontFamily: "Helvetica-Bold", marginTop: 14, marginBottom: 2 },
+  sub: { color: C.muted, marginTop: 4 },
   h2: { fontSize: 12, fontFamily: "Helvetica-Bold", color: C.forest, marginTop: 16, marginBottom: 6, paddingBottom: 3, borderBottomWidth: 1, borderBottomColor: "#d9d2bf" },
   row: { flexDirection: "row", paddingVertical: 2 },
   k: { width: 170, color: C.muted },
@@ -26,6 +27,7 @@ const s = StyleSheet.create({
 const tnd = (n: number) => `${n.toLocaleString("fr-FR").replace(/ | /g, " ")} TND`;
 const TITLE = { verified: "Titre vérifié par VerdOlive", document: "Titre déclaré, document fourni", declared: "Titre déclaré (non vérifié)", none: "Sans titre foncier" } as const;
 const WATER = { analyzed: "Eau analysée", documented: "Eau documentée", declared: "Eau déclarée (non vérifiée)", none: "Sans eau sur le terrain" } as const;
+const AVAILABILITY = { year_round: "toute l'année", seasonal: "saisonnière", uncertain: "disponibilité incertaine" } as const;
 const OBJ = { sale: "Vente", rent: "Location", partnership: "Partenariat" } as const;
 
 function Row({ k, v }: { k: string; v: string | number | null | undefined }) {
@@ -65,7 +67,14 @@ export function LandReport({ land, diag, generatedAt }: { land: CatalogItem; dia
         <Row k="Plantations" v={land.trees.map((t) => [t.species, t.count && `${t.count} arbres`, t.age].filter(Boolean).join(", ")).join(" ; ") || land.crops} />
         <Row k="Type de sol" v={land.extra.soilType} />
         <Row k="Équipements" v={land.extra.equipment?.join(", ")} />
-        <Row k="Carte" v={land.latApprox != null ? `https://www.openstreetmap.org/?mlat=${land.latApprox}&mlon=${land.lngApprox}#map=12/${land.latApprox}/${land.lngApprox}` : null} />
+        {land.latApprox != null && (
+          <View style={s.row}>
+            <Text style={s.k}>Carte</Text>
+            <Link style={[s.v, { color: C.forest }]} src={`https://www.openstreetmap.org/?mlat=${land.latApprox}&mlon=${land.lngApprox}#map=12/${land.latApprox}/${land.lngApprox}`}>
+              Voir la zone sur OpenStreetMap
+            </Link>
+          </View>
+        )}
         <Row k="Photos disponibles" v={`${land.photoUrls.length}`} />
 
         <Text style={s.h2}>2. Situation foncière et eau</Text>
@@ -73,7 +82,7 @@ export function LandReport({ land, diag, generatedAt }: { land: CatalogItem; dia
         <Row k="Nature de la propriété" v={land.ownership ? `${{ individual: "Individuelle", joint: "Indivision", other: "Autre" }[land.ownership]}${land.ownership === "joint" ? (land.jointOwnersAgree ? " (accord des indivisaires déclaré)" : " (accord à vérifier)") : ""}` : null} />
         <Row k="Réserves" v={land.titleNotes} />
         <Row k="Eau" v={`${land.waterAnswer === "yes" ? "Oui" : "Non"} · ${WATER[land.waterProof]}`} />
-        <Row k="Source et disponibilité" v={land.waterAnswer === "yes" ? `${land.waterSources.join(", ")} · ${land.waterAvailability ?? "?"}` : null} />
+        <Row k="Source et disponibilité" v={land.waterAnswer === "yes" ? `${land.waterSources.map((x) => WATER_SOURCES.find((w) => w.value === x)?.label ?? x).join(", ")} · ${AVAILABILITY[land.waterAvailability ?? "uncertain"]}` : null} />
         <Row k="Débit" v={land.flowValue != null ? `${land.flowValue} ${land.flowUnit === "m3_h" ? "m³/h" : "l/s"} (${land.flowNature === "measured" ? "mesuré" : "déclaré"})` : "Non renseigné"} />
         <Row k="Salinité de l'eau" v={land.salinityGL != null ? `${land.salinityGL} g/l (déclarée)` : null} />
         <Row k="Eau partagée" v={land.waterShared === "yes" ? `Oui : ${land.waterSharedDetails ?? ""}` : land.waterShared === "no" ? "Non" : null} />
