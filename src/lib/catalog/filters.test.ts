@@ -42,6 +42,14 @@ describe("catalogue : filtres (§6.2)", () => {
     expect(r.items.map((l) => l.name)).toContain("Oliveraie – Zaghouan");
   });
 
+  it("source, disponibilité et débit excluent les terrains déclarés sans eau", () => {
+    for (const f of [{ source: ["well"] }, { dispo: ["year_round" as const] }, { debitMin: 1 }]) {
+      const r = run({ ...f, tous: true });
+      expect(r.items.length).toBeGreaterThan(0);
+      expect(r.items.every((l) => l.waterAnswer === "yes")).toBe(true);
+    }
+  });
+
   it("budget selon le type d'offre : le partenariat sans prix reste visible", () => {
     const r = run({ budMax: 900_000 });
     expect(r.items.map((l) => l.name)).toEqual(expect.arrayContaining(["Oliveraie – Cap Bon", "Palmeraie – Tozeur"]));

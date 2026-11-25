@@ -167,15 +167,17 @@ export function activeTests(f: CatalogFilters): Test[] {
     t.push({
       key: "source",
       label: "Source d'eau",
-      test: (l) => l.waterAnswer !== "yes" || !l.waterSources.length || l.waterSources.some((s) => f.source.includes(s)),
+      // Un terrain déclaré sans eau n'a pas de source : exclu. Donnée non renseignée : conservé.
+      test: (l) => l.waterAnswer !== "no" && (!l.waterSources.length || l.waterSources.some((s) => f.source.includes(s))),
     });
   if (f.dispo.length)
     t.push({
       key: "dispo",
       label: f.dispo.map((d) => (d === "year_round" ? "Eau toute l'année" : "Eau saisonnière")).join(" ou "),
-      test: (l) => unknownOk(l.waterAvailability, (a) => (f.dispo as string[]).includes(a)),
+      test: (l) => l.waterAnswer !== "no" && unknownOk(l.waterAvailability, (a) => (f.dispo as string[]).includes(a)),
     });
-  if (f.debitMin != null) t.push({ key: "debitMin", label: `Débit ≥ ${f.debitMin} l/s`, test: (l) => unknownOk(l.flowLs, (d) => d >= f.debitMin!) });
+  if (f.debitMin != null)
+    t.push({ key: "debitMin", label: `Débit ≥ ${f.debitMin} l/s`, test: (l) => l.waterAnswer !== "no" && unknownOk(l.flowLs, (d) => d >= f.debitMin!) });
   if (f.foncier.length) {
     const labels = { declared: "Titre déclaré", document: "Document fourni", verified: "Titre vérifié" };
     t.push({ key: "foncier", label: f.foncier.map((x) => labels[x]).join(" ou "), test: (l) => (f.foncier as string[]).includes(l.titleProof) });
