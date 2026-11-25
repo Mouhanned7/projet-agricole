@@ -84,9 +84,19 @@ export function ArabicTranslator() {
       observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: [...ATTRIBUTES] });
       document.documentElement.removeAttribute("data-i18n");
     };
-    // Après l'hydratation de React.
-    const timer = window.setTimeout(start, 0);
+    // Après l'hydratation complète de React (les pages arrivent en plusieurs morceaux) :
+    // modifier le texte trop tôt provoque une erreur d'hydratation et un nouveau rendu.
+    let timer = 0;
+    const whenIdle = () => {
+      timer = window.setTimeout(() => {
+        if ("requestIdleCallback" in window) window.requestIdleCallback(start, { timeout: 800 });
+        else start();
+      }, 250);
+    };
+    if (document.readyState === "complete") whenIdle();
+    else window.addEventListener("load", whenIdle, { once: true });
     return () => {
+      window.removeEventListener("load", whenIdle);
       window.clearTimeout(timer);
       observer?.disconnect();
     };

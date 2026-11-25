@@ -3,6 +3,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
 import { useEffect, useRef } from "react";
+import { enableArabicText } from "./arabic-map-text";
 
 export interface MapPoint {
   id: string;
@@ -24,17 +25,6 @@ function styleUrl() {
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-
-/**
- * Sans cette extension, les noms arabes s'affichent à l'envers, lettres détachées.
- * Fichier hébergé sur le site (public/vendor), chargé quand la carte rencontre de l'arabe.
- */
-function enableArabicText() {
-  if (maplibregl.getRTLTextPluginStatus() !== "unavailable") return;
-  maplibregl
-    .setRTLTextPlugin(`${window.location.origin}/vendor/mapbox-gl-rtl-text.js`, true)
-    .catch((e) => console.error("Extension texte arabe", e));
-}
 
 /** Carte interactive de la Tunisie (§8) : positions approximatives, mêmes filtres que le catalogue. */
 export function LandsMap({ points }: { points: MapPoint[] }) {

@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { enableArabicText } from "./arabic-map-text";
 
 const PLAN = "https://tiles.openfreemap.org/styles/liberty";
 const SATELLITE: maplibregl.StyleSpecification = {
@@ -30,6 +31,7 @@ export function PointMap({ lat, lng, onPick }: { lat: number | null; lng: number
 
   useEffect(() => {
     if (!box.current) return;
+    enableArabicText();
     const m = new maplibregl.Map({
       container: box.current,
       style: PLAN,
